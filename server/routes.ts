@@ -147,7 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { conversationId, language = 'english' } = req.body;
       
-      if (!req.file) {
+      if (!req.file || !('buffer' in req.file)) {
         return res.status(400).json({ error: 'Image file is required' });
       }
       

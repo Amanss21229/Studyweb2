@@ -1,7 +1,7 @@
 export class AudioRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
-  private recognition: SpeechRecognition | null = null;
+  private recognition: any = null;
 
   constructor() {
     if ('webkitSpeechRecognition' in window) {
@@ -65,12 +65,12 @@ export class AudioRecorder {
 
       this.recognition.lang = this.getLanguageCode(language);
 
-      this.recognition.onresult = (event) => {
+      this.recognition.onresult = (event: any) => {
         const result = event.results[0]?.[0]?.transcript || '';
         resolve(result);
       };
 
-      this.recognition.onerror = (event) => {
+      this.recognition.onerror = (event: any) => {
         reject(new Error(`Speech recognition error: ${event.error}`));
       };
 
