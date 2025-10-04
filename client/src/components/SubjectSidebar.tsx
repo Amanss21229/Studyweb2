@@ -12,23 +12,23 @@ interface SubjectSidebarProps {
 
 export function SubjectSidebar({ selectedSubject, onSubjectSelect, subjectCounts = {} }: SubjectSidebarProps) {
   const subjects = [
-    { id: 'physics', name: 'Physics', icon: Atom, color: 'text-blue-500' },
-    { id: 'chemistry', name: 'Chemistry', icon: FlaskConical, color: 'text-green-500' },
-    { id: 'math', name: 'Mathematics', icon: Calculator, color: 'text-purple-500' },
-    { id: 'biology', name: 'Biology', icon: Dna, color: 'text-pink-500' }
+    { id: 'physics', name: 'Physics', icon: Atom, color: 'text-blue-500 dark:text-blue-400' },
+    { id: 'chemistry', name: 'Chemistry', icon: FlaskConical, color: 'text-green-500 dark:text-green-400' },
+    { id: 'math', name: 'Mathematics', icon: Calculator, color: 'text-purple-500 dark:text-purple-400' },
+    { id: 'biology', name: 'Biology', icon: Dna, color: 'text-pink-500 dark:text-pink-400' }
   ];
 
   const quickActions = [
-    { name: 'View History', icon: History, color: 'text-secondary', href: '/history' },
+    { name: 'View History', icon: History, color: 'text-primary', href: '/history' },
     { name: 'Saved Solutions', icon: Bookmark, color: 'text-accent', href: '/saved-solutions' },
-    { name: 'Progress', icon: TrendingUp, color: 'text-success', href: '/progress' }
+    { name: 'Progress', icon: TrendingUp, color: 'text-primary', href: '/progress' }
   ];
 
   return (
-    <Card className="card-elevated sticky top-24" data-testid="subject-sidebar">
+    <Card className="card-elevated sticky top-24 premium-border" data-testid="subject-sidebar">
       <CardContent className="p-4">
         <h2 className="font-semibold text-lg mb-4 flex items-center">
-          <div className="w-2 h-2 bg-primary rounded-full mr-2" />
+          <div className="w-2 h-2 bg-primary rounded-full mr-2 premium-glow" />
           Subjects
         </h2>
         
@@ -42,17 +42,21 @@ export function SubjectSidebar({ selectedSubject, onSubjectSelect, subjectCounts
               <Button
                 key={subject.id}
                 variant={isSelected ? "default" : "ghost"}
-                className={`w-full justify-between px-4 py-3 h-auto ${isSelected ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'hover:bg-muted'}`}
+                className={`w-full justify-between px-4 py-3 h-auto transition-all ${
+                  isSelected 
+                    ? 'premium-gradient text-white hover:opacity-90 shadow-md' 
+                    : 'hover:bg-primary/10 hover:border-primary/20'
+                }`}
                 onClick={() => onSubjectSelect(isSelected ? null : subject.id)}
                 data-testid={`subject-${subject.id}`}
               >
                 <div className="flex items-center space-x-3">
-                  <Icon className={`h-5 w-5 ${isSelected ? 'text-current' : subject.color}`} />
+                  <Icon className={`h-5 w-5 ${isSelected ? 'text-white' : subject.color}`} />
                   <span className="font-medium">{subject.name}</span>
                 </div>
                 <Badge 
                   variant={isSelected ? "secondary" : "outline"}
-                  className="text-xs bg-white/20"
+                  className={`text-xs ${isSelected ? 'bg-white/20 text-white border-white/30' : ''}`}
                 >
                   {count}
                 </Badge>
@@ -71,7 +75,7 @@ export function SubjectSidebar({ selectedSubject, onSubjectSelect, subjectCounts
                 <Button
                   key={action.name}
                   variant="ghost"
-                  className="w-full justify-start px-4 py-2 h-auto text-sm hover:bg-muted"
+                  className="w-full justify-start px-4 py-2 h-auto text-sm hover:bg-primary/10 transition-all"
                   data-testid={`action-${action.name.toLowerCase().replace(' ', '-')}`}
                   asChild
                 >

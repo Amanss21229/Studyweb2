@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Lightbulb, FlaskConical, Calculator, Dna } from "lucide-react";
+import { Lightbulb, FlaskConical, Calculator, Dna } from "lucide-react";
 import { MessageList } from "./MessageList";
 import { InputPanel } from "./InputPanel";
 import { ShareModal } from "./ShareModal";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "./LanguageProvider";
+import logoImage from "@assets/IMG_20250913_000900_129_1759602426440.jpg";
 import { 
   createConversation, 
   submitTextQuestion, 
@@ -123,7 +124,7 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
       const userMessage: ConversationMessage = {
         id: data.question.id,
         type: 'question',
-        text: data.extractedText,
+        text: data.question.questionText,
         inputType: 'image',
         imageUrl: data.question.imageUrl,
         createdAt: data.question.createdAt,
@@ -143,11 +144,7 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
       
       setMessages(prev => [...prev, userMessage, aiMessage]);
       
-      toast({
-        title: "Image processed successfully!",
-        description: `Extracted text: "${data.extractedText.substring(0, 50)}..."`,
-      });
-      
+      // Invalidate and refetch messages
       queryClient.invalidateQueries({
         queryKey: ['/api/conversations', conversationId, 'messages']
       });
@@ -156,7 +153,7 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
       setIsTyping(false);
       toast({
         title: "Failed to process image",
-        description: error.message || "Please try again with a clearer image",
+        description: error.message || "Please try again",
         variant: "destructive",
       });
     },
@@ -165,7 +162,6 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
   const handleTextSubmit = async (text: string) => {
     if (!conversationId) {
       createConversationMutation.mutate();
-      // Wait for conversation to be created, then submit
       setTimeout(() => {
         submitTextMutation.mutate({ text });
       }, 500);
@@ -228,15 +224,24 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
     <>
       {/* Welcome Card */}
       {!hasConversation && (
-        <Card className="card-elevated mb-6" data-testid="welcome-card">
+        <Card className="card-elevated mb-6 premium-border premium-gradient-subtle" data-testid="welcome-card">
           <CardContent className="p-8">
             <div className="text-center max-w-2xl mx-auto">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <GraduationCap className="h-8 w-8 text-white" />
+              <div className="w-24 h-24 mx-auto mb-6 rounded-2xl overflow-hidden logo-shine premium-border animate-pulse-glow">
+                <img 
+                  src={logoImage} 
+                  alt="AimAi Logo" 
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <h2 className="text-3xl font-bold mb-3">Hello, Future Doctor/Engineer! 👋</h2>
-              <p className="text-muted-foreground text-lg mb-6">
-                I'm your AI tutor for NEET & JEE preparation. Ask me anything about Physics, Chemistry, Mathematics, or Biology from the NCERT syllabus!
+              <h2 className="text-4xl font-bold mb-2 gold-glow-text">
+                Hello, Future Doctor/Engineer! 👋
+              </h2>
+              <p className="text-sm font-semibold text-primary mb-2 tracking-wide">
+                POWERED BY SANSA LEARN
+              </p>
+              <p className="text-muted-foreground text-lg mb-8">
+                Your personal AI tutor for NEET & JEE preparation. Ask me anything about Physics, Chemistry, Mathematics, or Biology from the NCERT syllabus!
               </p>
               
               {/* Example Questions */}
@@ -247,7 +252,7 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
                     <Button
                       key={index}
                       variant="outline"
-                      className="p-4 h-auto text-left card-elevated hover-lift hover:border-primary hover:bg-primary/5"
+                      className="p-4 h-auto text-left card-elevated hover-lift hover:border-primary hover:bg-primary/10 transition-all"
                       onClick={() => handleTextSubmit(question.text)}
                       disabled={isLoading}
                       data-testid={`example-question-${index}`}
@@ -260,8 +265,8 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
               </div>
 
               <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
-                <Lightbulb className="h-4 w-4" />
-                <span>Choose your input method below to get started</span>
+                <Lightbulb className="h-4 w-4 text-primary" />
+                <span className="font-medium">Pro Tip: Be specific with your questions. Include chapter names or topic details for better explanations!</span>
               </div>
             </div>
           </CardContent>

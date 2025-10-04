@@ -1,10 +1,17 @@
-# NEET JEE AI Tutor
+# AimAi - Your Personal AI Tutor
 
 ## Overview
 
-A full-stack web application that serves as an AI-powered tutor for NEET and JEE exam preparation. Students can ask questions through text, images, or audio, and receive detailed step-by-step solutions in multiple languages. The application maps questions to NCERT curriculum topics and provides relevant previous year question references.
+**AimAi**, powered by Sansa Learn, is a premium full-stack web application that serves as an AI-powered tutor for NEET and JEE exam preparation. Students can ask questions through text, images, or audio, and receive detailed step-by-step solutions in multiple languages. The application maps questions to NCERT curriculum topics and provides relevant previous year question references.
 
 **Core Purpose**: Provide personalized doubt-solving assistance for NEET/JEE students with multi-modal input support (text, image, audio) and multilingual explanations.
+
+**Brand Identity**:
+- Name: AimAi
+- Tagline: Powered by Sansa Learn
+- Mission: Your personal AI tutor for NEET & JEE
+- Design: Premium golden-orange theme with dark/black backgrounds, featuring the Sansa Learn circuit tree logo
+- Color Scheme: Golden (#C9943D, #D4A574) accents on dark backgrounds for a trusted, bold, and premium appearance
 
 **Tech Stack**:
 - Frontend: React with TypeScript, Vite build system

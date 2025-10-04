@@ -12,11 +12,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { GraduationCap, Languages, Moon, Sun, User, LogOut } from "lucide-react";
+import { Languages, Moon, Sun, User, LogOut } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { redirectToLogin, redirectToLogout } from "@/lib/authUtils";
+import logoImage from "@assets/IMG_20250913_000900_129_1759602426440.jpg";
 import Home from "@/pages/Home";
 import CompleteProfile from "@/pages/CompleteProfile";
 import Solution from "@/pages/Solution";
@@ -31,17 +32,28 @@ function Header() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 dark:bg-card/90">
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-20 items-center justify-between">
           {/* Logo and Brand */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <GraduationCap className="h-6 w-6 text-white" />
+          <div className="flex items-center space-x-4">
+            <div className="w-14 h-14 rounded-xl overflow-hidden logo-shine premium-border premium-glow flex-shrink-0">
+              <img 
+                src={logoImage} 
+                alt="AimAi Logo" 
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
-              <h1 className="text-lg font-bold gradient-text">NEET JEE AI Tutor</h1>
-              <p className="text-xs text-muted-foreground">Your Personal Doubt Solver</p>
+              <h1 className="text-2xl font-bold gold-glow-text tracking-tight">
+                AimAi
+              </h1>
+              <p className="text-[10px] text-primary font-semibold tracking-wide">
+                POWERED BY SANSA LEARN
+              </p>
+              <p className="text-[9px] text-muted-foreground hidden sm:block">
+                Your personal AI tutor for NEET & JEE
+              </p>
             </div>
           </div>
 
@@ -52,7 +64,7 @@ function Header() {
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-2 hover:bg-primary/10"
                   data-testid="language-selector"
                 >
                   <Languages className="h-4 w-4 text-primary" />
@@ -96,7 +108,7 @@ function Header() {
               variant="ghost"
               size="sm"
               onClick={toggleTheme}
-              className="btn-icon"
+              className="btn-icon hover:bg-primary/10"
               data-testid="theme-toggle"
             >
               {theme === 'dark' ? (
@@ -114,17 +126,17 @@ function Header() {
                     <DropdownMenuTrigger asChild>
                       <Button 
                         variant="ghost" 
-                        className="flex items-center space-x-2"
+                        className="flex items-center space-x-2 hover:bg-primary/10"
                         data-testid="user-menu"
                       >
                         {user.profileImageUrl ? (
                           <img 
                             src={user.profileImageUrl} 
                             alt={user.name || "User"} 
-                            className="w-8 h-8 rounded-full object-cover"
+                            className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full premium-gradient flex items-center justify-center">
                             <User className="h-4 w-4 text-white" />
                           </div>
                         )}
@@ -147,7 +159,7 @@ function Header() {
                 ) : (
                   <Button 
                     onClick={redirectToLogin}
-                    variant="default"
+                    className="premium-gradient text-white hover:opacity-90 font-semibold shadow-lg"
                     size="sm"
                     data-testid="login-button"
                   >
