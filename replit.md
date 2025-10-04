@@ -22,33 +22,34 @@ A full-stack web application that serves as an AI-powered tutor for NEET and JEE
 
 **Required (Manual Setup):**
 - `HUGGINGFACE_API_KEY` - Get from [HuggingFace](https://huggingface.co/settings/tokens)
+  - **IMPORTANT:** The application will run without this key, but AI-powered question answering will not work until you add it.
 
 **Auto-configured in Replit:**
-- `DATABASE_URL` - PostgreSQL connection string (auto-configured when database is created)
-- `SESSION_SECRET` - Session encryption key (auto-generated)
-- `REPL_ID`, `REPLIT_DOMAINS`, `ISSUER_URL` - Replit authentication config (auto-set)
+- `DATABASE_URL` - PostgreSQL connection string (auto-configured when database is created) ✓ Configured
+- `SESSION_SECRET` - Session encryption key (auto-generated) ✓ Configured
+- `REPL_ID`, `REPLIT_DOMAINS`, `ISSUER_URL` - Replit authentication config (auto-set) ✓ Auto-configured
 
 ### Initial Setup
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+✅ **Setup Status: Complete**
 
-2. **Set up HuggingFace API Key:**
+The application is ready to run in the Replit environment:
+
+1. **Dependencies installed:** ✓ All npm packages are installed
+2. **Database configured:** ✓ PostgreSQL database is provisioned and schema is pushed
+3. **Workflow configured:** ✓ Development server runs on port 5000
+4. **SSL configuration fixed:** ✓ Database connection works in Replit environment
+
+### To Start Using:
+
+1. **Set up HuggingFace API Key (Required for AI features):**
    - Get your API key from [HuggingFace](https://huggingface.co/settings/tokens)
    - Add to Replit Secrets: `HUGGINGFACE_API_KEY=your_key_here`
+   - Restart the application after adding the key
 
-3. **Initialize database:**
-   ```bash
-   npm run db:push
-   ```
-
-4. **Start development server:**
-   ```bash
-   npm run dev
-   ```
-   The app will be available at port 5000
+2. **The app is already running:**
+   - Frontend available at port 5000
+   - Click the "Webview" tab to view the application
 
 ### Production Deployment
 
