@@ -25,6 +25,7 @@ export interface IStorage {
   getQuestion(id: string): Promise<Question | undefined>;
   getQuestionsByConversation(conversationId: string): Promise<Question[]>;
   createQuestion(question: InsertQuestion): Promise<Question>;
+  updateQuestion(id: string, updates: { subject?: string; chapter?: string; topic?: string }): Promise<Question>;
   getSubjectCounts(): Promise<Record<string, number>>;
 
   // Solutions
@@ -105,6 +106,15 @@ export class DatabaseStorage implements IStorage {
 
   async createQuestion(insertQuestion: InsertQuestion): Promise<Question> {
     const [question] = await db.insert(questions).values(insertQuestion).returning();
+    return question;
+  }
+
+  async updateQuestion(id: string, updates: { subject?: string; chapter?: string; topic?: string }): Promise<Question> {
+    const [question] = await db
+      .update(questions)
+      .set(updates)
+      .where(eq(questions.id, id))
+      .returning();
     return question;
   }
 

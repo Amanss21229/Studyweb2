@@ -115,8 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Update question with subject/chapter/topic
-      await storage.createQuestion({
-        ...question,
+      await storage.updateQuestion(question.id, {
         subject: aiResponse.subject,
         chapter: aiResponse.chapter,
         topic: aiResponse.topic,
