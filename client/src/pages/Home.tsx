@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ChatInterface } from "@/components/ChatInterface";
 import { SubjectSidebar } from "@/components/SubjectSidebar";
 import { Plus } from "lucide-react";
@@ -7,13 +8,9 @@ import { Button } from "@/components/ui/button";
 export default function Home() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
-  // Mock subject counts - in real app, these would come from API
-  const subjectCounts = {
-    physics: 24,
-    chemistry: 18,
-    math: 31,
-    biology: 15,
-  };
+  const { data: subjectCounts = {} } = useQuery<Record<string, number>>({
+    queryKey: ['/api/stats/subject-counts'],
+  });
 
   return (
     <main className="container mx-auto px-4 py-6 max-w-7xl" data-testid="home-page">

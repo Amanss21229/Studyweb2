@@ -44,12 +44,12 @@ Respond with JSON in this format:
 If the question is not NEET/JEE related, politely decline and suggest focusing on NCERT syllabus topics.`;
 
     const response = await hf.chatCompletion({
-      model: "meta-llama/Llama-3.1-70B-Instruct",
+      model: "meta-llama/Llama-3.1-8B-Instruct",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: question }
       ],
-      max_tokens: 4096,
+      max_tokens: 2048,
       temperature: 0.7,
     });
 
