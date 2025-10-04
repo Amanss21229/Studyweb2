@@ -42,10 +42,7 @@ export default function CompleteProfile() {
 
   const completeProfileMutation = useMutation({
     mutationFn: async (data: CompleteProfile) => {
-      await apiRequest("/api/auth/complete-profile", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      await apiRequest("POST", "/api/auth/complete-profile", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
