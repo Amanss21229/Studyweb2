@@ -9,11 +9,64 @@ A full-stack web application that serves as an AI-powered tutor for NEET and JEE
 **Tech Stack**:
 - Frontend: React with TypeScript, Vite build system
 - Backend: Express.js with TypeScript
-- Database: PostgreSQL via Neon (serverless)
+- Database: PostgreSQL (Replit Database)
 - ORM: Drizzle
 - UI: Shadcn/ui components with Radix UI primitives, Tailwind CSS
-- AI: OpenAI API (GPT-5 model)
+- AI: HuggingFace Inference API (Llama 3.1 models)
 - OCR: Tesseract.js for image text extraction
+- Authentication: Replit Auth (OpenID Connect)
+
+## Setup Instructions
+
+### Environment Variables
+
+**Required (Manual Setup):**
+- `HUGGINGFACE_API_KEY` - Get from [HuggingFace](https://huggingface.co/settings/tokens)
+
+**Auto-configured in Replit:**
+- `DATABASE_URL` - PostgreSQL connection string (auto-configured when database is created)
+- `SESSION_SECRET` - Session encryption key (auto-generated)
+- `REPL_ID`, `REPLIT_DOMAINS`, `ISSUER_URL` - Replit authentication config (auto-set)
+
+### Initial Setup
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Set up HuggingFace API Key:**
+   - Get your API key from [HuggingFace](https://huggingface.co/settings/tokens)
+   - Add to Replit Secrets: `HUGGINGFACE_API_KEY=your_key_here`
+
+3. **Initialize database:**
+   ```bash
+   npm run db:push
+   ```
+
+4. **Start development server:**
+   ```bash
+   npm run dev
+   ```
+   The app will be available at port 5000
+
+### Production Deployment
+
+```bash
+npm run build
+npm start
+```
+
+### Features
+
+- **Text Input**: Free for all users (120 minutes daily limit for guests)
+- **Image Upload**: Requires login (uses OCR to extract questions from images)
+- **Voice Input**: Requires login (converts speech to text for questions)
+- **Multi-language Support**: English, Hindi, Hinglish, Bengali
+- **Solution Sharing**: Each solution gets a unique shareable URL
+- **Subject Tracking**: Automatic categorization into Physics, Chemistry, Math, Biology
+- **NCERT Mapping**: Solutions mapped to specific chapters and topics
+- **PYQ References**: Relevant NEET/JEE previous year questions
 
 ## User Preferences
 
@@ -117,12 +170,13 @@ Preferred communication style: Simple, everyday language.
 
 ### External Dependencies
 
-**OpenAI API Integration**:
-- Model: GPT-5 (configured in `/server/services/openai.ts`)
+**HuggingFace Inference API**:
+- Models: Llama 3.1 70B Instruct (main solutions), Llama 3.1 8B Instruct (title generation)
 - Purpose: Generate step-by-step solutions with NCERT curriculum mapping
 - Response structure: JSON format with answer, subject, chapter, topic, and PYQ references
-- Language-aware: System prompts specify output language
+- Language-aware: System prompts specify output language (English, Hindi, Hinglish, Bengali)
 - Guardrails: Only answers NEET/JEE-related academic questions
+- Requires: `HUGGINGFACE_API_KEY` environment variable
 
 **Tesseract.js OCR**:
 - Purpose: Extract text from uploaded question images
@@ -130,15 +184,24 @@ Preferred communication style: Simple, everyday language.
 - Handles handwritten and printed text
 - Error handling for unclear images
 
-**Neon Database**:
-- Serverless PostgreSQL database
-- WebSocket-based connection using `@neondatabase/serverless`
+**PostgreSQL Database**:
+- Replit-managed PostgreSQL database
+- WebSocket-based connection using `@neondatabase/serverless` driver
 - Connection pooling for performance
-- Requires `DATABASE_URL` environment variable
+- Requires `DATABASE_URL` environment variable (auto-configured)
 
 **Session Management**:
-- `connect-pg-simple` for PostgreSQL-backed sessions (referenced but not fully implemented in visible code)
-- Future consideration for user authentication
+- PostgreSQL-backed sessions using `connect-pg-simple`
+- `sessions` table for persistent session storage
+- Session TTL: 7 days
+- Requires `SESSION_SECRET` environment variable (auto-configured)
+
+**Replit Authentication**:
+- OpenID Connect (OIDC) integration with Replit
+- Passport.js strategy for authentication flow
+- Automatic user profile sync to database
+- Token refresh mechanism for extended sessions
+- Requires: `REPL_ID`, `REPLIT_DOMAINS`, `ISSUER_URL` (auto-configured in Replit environment)
 
 **File Upload**:
 - Multer middleware for handling multipart/form-data
