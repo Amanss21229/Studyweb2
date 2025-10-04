@@ -12,16 +12,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { GraduationCap, Languages, Moon, Sun, User } from "lucide-react";
+import { GraduationCap, Languages, Moon, Sun, User, LogOut } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useAuth } from "@/hooks/useAuth";
+import { redirectToLogin, redirectToLogout } from "@/lib/authUtils";
 import Home from "@/pages/Home";
+import CompleteProfile from "@/pages/CompleteProfile";
 import Solution from "@/pages/Solution";
 import NotFound from "@/pages/not-found";
 
 function Header() {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, getLanguageDisplay } = useLanguage();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -99,16 +103,56 @@ function Header() {
               )}
             </Button>
 
-            {/* User Profile (Optional) */}
-            <Button 
-              variant="ghost" 
-              className="hidden sm:flex items-center space-x-2"
-            >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
-                <User className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-sm font-medium hidden md:inline">Student</span>
-            </Button>
+            {/* User Profile / Login */}
+            {!isLoading && (
+              <>
+                {isAuthenticated && user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="flex items-center space-x-2"
+                        data-testid="user-menu"
+                      >
+                        {user.profileImageUrl ? (
+                          <img 
+                            src={user.profileImageUrl} 
+                            alt={user.name || "User"} 
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
+                            <User className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+                        <span className="text-sm font-medium hidden md:inline">
+                          {user.name || user.firstName || "Student"}
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem 
+                        onClick={redirectToLogout}
+                        className="text-destructive"
+                        data-testid="logout-button"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button 
+                    onClick={redirectToLogin}
+                    variant="default"
+                    size="sm"
+                    data-testid="login-button"
+                  >
+                    Login with Google
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -117,6 +161,24 @@ function Header() {
 }
 
 function Router() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If authenticated but profile not complete, show Complete Profile page
+  if (isAuthenticated && user && !user.isProfileComplete) {
+    return <CompleteProfile />;
+  }
+
   return (
     <Switch>
       <Route path="/" component={Home} />

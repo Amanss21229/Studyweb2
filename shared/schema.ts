@@ -45,7 +45,7 @@ export const questions = pgTable("questions", {
   conversationId: varchar("conversation_id").references(() => conversations.id).notNull(),
   questionText: text("question_text").notNull(),
   inputType: varchar("input_type", { length: 10 }).notNull(), // 'text', 'image', 'audio'
-  subject: varchar("subject", { length: 20 }), // 'physics', 'chemistry', 'math', 'biology'
+  subject: varchar("subject", { length: 100 }), // 'physics', 'chemistry', 'math', 'biology'
   chapter: text("chapter"),
   topic: text("topic"),
   imageUrl: text("image_url"),
@@ -58,7 +58,7 @@ export const solutions = pgTable("solutions", {
   questionId: varchar("question_id").references(() => questions.id).notNull(),
   solutionText: text("solution_text").notNull(),
   explanation: text("explanation"),
-  subject: varchar("subject", { length: 20 }).notNull(),
+  subject: varchar("subject", { length: 100 }).notNull(),
   chapter: text("chapter"),
   topic: text("topic"),
   neetJeePyq: jsonb("neet_jee_pyq").$type<{
