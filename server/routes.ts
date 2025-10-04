@@ -151,6 +151,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.totalUsageMinutes = (req.session.totalUsageMinutes || 0) + 1;
       }
       
+      // Get user name for personalized conversation
+      let userName: string | undefined;
+      if (req.isAuthenticated()) {
+        const user = await storage.getUser(req.user.claims.sub);
+        userName = user?.name || user?.firstName || undefined;
+      } else if (req.session?.userName) {
+        userName = req.session.userName;
+      }
+      
+      // Extract name from conversation if user introduces themselves
+      const nameMatch = questionText.match(/(?:my name is|i am|i'm|mera naam|main)\s+([A-Za-z]+)/i);
+      if (nameMatch && nameMatch[1]) {
+        userName = nameMatch[1];
+        if (req.session) {
+          req.session.userName = userName;
+        }
+      }
+      
       // Create question
       const question = await storage.createQuestion({
         conversationId,
@@ -158,8 +176,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         inputType: 'text',
       });
       
-      // Generate AI solution
-      const aiResponse = await generateSolution(questionText, language);
+      // Generate AI solution with user context
+      const aiResponse = await generateSolution(questionText, language, userName);
       
       // Create solution with unique share URL
       const shareUrl = `${nanoid(12)}`;
@@ -204,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Submit question (image) - Requires login
-  app.post("/api/questions/image", requireAuthForPremiumFeatures, upload.single('image'), async (req: Request, res: Response) => {
+  app.post("/api/questions/image", requireAuthForPremiumFeatures, upload.single('image'), async (req: any, res: Response) => {
     try {
       const { conversationId, language = 'english' } = req.body;
       
@@ -219,6 +237,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No text could be extracted from the image' });
       }
       
+      // Get user name for personalized conversation
+      let userName: string | undefined;
+      if (req.isAuthenticated()) {
+        const user = await storage.getUser(req.user.claims.sub);
+        userName = user?.name || user?.firstName || undefined;
+      }
+      
       // Create question
       const question = await storage.createQuestion({
         conversationId,
@@ -227,8 +252,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageUrl: '', // In production, save to cloud storage
       });
       
-      // Generate AI solution
-      const aiResponse = await generateSolution(extractedText, language);
+      // Generate AI solution with user context
+      const aiResponse = await generateSolution(extractedText, language, userName);
       
       // Create solution
       const shareUrl = `${nanoid(12)}`;
