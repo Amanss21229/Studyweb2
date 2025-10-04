@@ -53,7 +53,7 @@ If the question is not NEET/JEE related, politely decline and suggest focusing o
       temperature: 0.7,
     });
 
-    const content = response.choices[0].message.content;
+    const content = response.choices[0].message.content || "";
     
     // Try to extract JSON from the response
     let result: AIResponse;
@@ -99,7 +99,8 @@ export async function generateConversationTitle(question: string): Promise<strin
       temperature: 0.5,
     });
 
-    return response.choices[0].message.content?.trim() || "Academic Discussion";
+    const title = response.choices[0].message.content?.trim() || "Academic Discussion";
+    return title;
   } catch (error) {
     console.error('Error generating title:', error);
     return "Academic Discussion";
