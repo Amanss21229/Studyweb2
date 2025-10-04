@@ -1,11 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Bookmark, Share2, CheckCheck, Bot, User } from "lucide-react";
+import { Copy, Bookmark, Share2, CheckCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConversationMessage } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
+import botAvatar from "@assets/IMG_20250826_123716_907_1759607150583.jpg";
 
 interface MessageListProps {
   messages: ConversationMessage[];
@@ -109,8 +110,12 @@ export function MessageList({ messages, isTyping, onShare }: MessageListProps) {
             // AI Solution
             <div className="max-w-[85%]">
               <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="h-4 w-4 text-white" />
+                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-1 border-2 border-primary/20">
+                  <img 
+                    src={botAvatar} 
+                    alt="AimAi Bot" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <div className="bg-card border border-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
@@ -197,8 +202,12 @@ export function MessageList({ messages, isTyping, onShare }: MessageListProps) {
       {isTyping && (
         <div className="flex justify-start chat-message" data-testid="typing-indicator">
           <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center flex-shrink-0 mt-1">
-              <Bot className="h-4 w-4 text-white" />
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-1 border-2 border-primary/20">
+              <img 
+                src={botAvatar} 
+                alt="AimAi Bot" 
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="bg-card border border-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
               <div className="flex items-center space-x-1 typing-indicator">

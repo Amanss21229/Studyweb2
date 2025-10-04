@@ -59,9 +59,8 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
 
   // Submit text question mutation
   const submitTextMutation = useMutation({
-    mutationFn: ({ text }: { text: string }) => {
-      if (!conversationId) throw new Error('No conversation');
-      return submitTextQuestion(conversationId, text, language);
+    mutationFn: ({ text, convId }: { text: string; convId: string }) => {
+      return submitTextQuestion(convId, text, language);
     },
     onMutate: ({ text }) => {
       // Optimistic update - add user message
@@ -75,8 +74,9 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
       setMessages(prev => [...prev, userMessage]);
       setIsTyping(true);
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       setIsTyping(false);
+      
       // Add AI response
       const aiMessage: ConversationMessage = {
         id: data.solution.id,
@@ -91,9 +91,9 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
       };
       setMessages(prev => [...prev, aiMessage]);
       
-      // Invalidate and refetch messages
+      // Invalidate and refetch messages using conversation ID from mutation variables
       queryClient.invalidateQueries({
-        queryKey: ['/api/conversations', conversationId, 'messages']
+        queryKey: ['/api/conversations', variables.convId, 'messages']
       });
     },
     onError: (error) => {
@@ -110,14 +110,13 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
 
   // Submit image question mutation
   const submitImageMutation = useMutation({
-    mutationFn: ({ file }: { file: File }) => {
-      if (!conversationId) throw new Error('No conversation');
-      return submitImageQuestion(conversationId, file, language);
+    mutationFn: ({ file, convId }: { file: File; convId: string }) => {
+      return submitImageQuestion(convId, file, language);
     },
     onMutate: () => {
       setIsTyping(true);
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       setIsTyping(false);
       
       // Add both user question and AI response
@@ -144,9 +143,9 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
       
       setMessages(prev => [...prev, userMessage, aiMessage]);
       
-      // Invalidate and refetch messages
+      // Invalidate and refetch messages using conversation ID from mutation variables
       queryClient.invalidateQueries({
-        queryKey: ['/api/conversations', conversationId, 'messages']
+        queryKey: ['/api/conversations', variables.convId, 'messages']
       });
     },
     onError: (error) => {
@@ -161,23 +160,33 @@ export function ChatInterface({ selectedSubject }: ChatInterfaceProps) {
 
   const handleTextSubmit = async (text: string) => {
     if (!conversationId) {
-      createConversationMutation.mutate();
-      setTimeout(() => {
-        submitTextMutation.mutate({ text });
-      }, 500);
+      // Create conversation first, then submit with the new conversation ID
+      try {
+        const newConversation = await createConversationMutation.mutateAsync();
+        // Now submit with the newly created conversation ID
+        submitTextMutation.mutate({ text, convId: newConversation.id });
+      } catch (error) {
+        // Error already handled by createConversationMutation's onError
+      }
     } else {
-      submitTextMutation.mutate({ text });
+      // Always pass conversationId explicitly to avoid state timing issues
+      submitTextMutation.mutate({ text, convId: conversationId });
     }
   };
 
   const handleImageSubmit = async (file: File) => {
     if (!conversationId) {
-      createConversationMutation.mutate();
-      setTimeout(() => {
-        submitImageMutation.mutate({ file });
-      }, 500);
+      // Create conversation first, then submit with the new conversation ID
+      try {
+        const newConversation = await createConversationMutation.mutateAsync();
+        // Now submit with the newly created conversation ID
+        submitImageMutation.mutate({ file, convId: newConversation.id });
+      } catch (error) {
+        // Error already handled by createConversationMutation's onError
+      }
     } else {
-      submitImageMutation.mutate({ file });
+      // Always pass conversationId explicitly to avoid state timing issues
+      submitImageMutation.mutate({ file, convId: conversationId });
     }
   };
 
