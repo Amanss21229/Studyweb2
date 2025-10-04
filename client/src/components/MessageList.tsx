@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Copy, Bookmark, Share2, CheckCheck, Bot, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConversationMessage } from "@/lib/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
 
 interface MessageListProps {
   messages: ConversationMessage[];
@@ -12,6 +15,39 @@ interface MessageListProps {
 
 export function MessageList({ messages, isTyping, onShare }: MessageListProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+
+  const bookmarkMutation = useMutation({
+    mutationFn: async (solutionId: string) => {
+      return await apiRequest(`/api/solutions/${solutionId}/bookmark`, {
+        method: 'POST',
+      });
+    },
+    onSuccess: (data, solutionId) => {
+      setBookmarkedIds(prev => {
+        const newSet = new Set(prev);
+        if (data.isBookmarked) {
+          newSet.add(solutionId);
+        } else {
+          newSet.delete(solutionId);
+        }
+        return newSet;
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/saved-solutions'] });
+      toast({
+        title: data.isBookmarked ? "Saved!" : "Removed",
+        description: data.isBookmarked ? "Solution saved to bookmarks" : "Solution removed from bookmarks",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save. Please login to save solutions.",
+        variant: "destructive",
+      });
+    }
+  });
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -30,11 +66,9 @@ export function MessageList({ messages, isTyping, onShare }: MessageListProps) {
   };
 
   const saveMessage = (message: ConversationMessage) => {
-    // TODO: Implement save to bookmarks
-    toast({
-      title: "Saved!",
-      description: "Message saved to bookmarks",
-    });
+    if (message.type === 'solution' && message.id) {
+      bookmarkMutation.mutate(message.id);
+    }
   };
 
   const formatTime = (dateString: string) => {
@@ -131,12 +165,13 @@ export function MessageList({ messages, isTyping, onShare }: MessageListProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-xs text-muted-foreground hover:text-accent btn-icon p-1"
+                        className={`text-xs btn-icon p-1 ${bookmarkedIds.has(message.id) ? 'text-accent' : 'text-muted-foreground hover:text-accent'}`}
                         onClick={() => saveMessage(message)}
                         data-testid={`save-message-${message.id}`}
+                        disabled={bookmarkMutation.isPending}
                       >
-                        <Bookmark className="h-3 w-3 mr-1" />
-                        Save
+                        <Bookmark className={`h-3 w-3 mr-1 ${bookmarkedIds.has(message.id) ? 'fill-accent' : ''}`} />
+                        {bookmarkedIds.has(message.id) ? 'Saved' : 'Save'}
                       </Button>
                       {message.shareUrl && onShare && (
                         <Button

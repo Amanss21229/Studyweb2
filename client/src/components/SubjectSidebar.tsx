@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Atom, FlaskConical, Calculator, Dna, History, Bookmark, TrendingUp } from "lucide-react";
+import { Link } from "wouter";
 
 interface SubjectSidebarProps {
   selectedSubject: string | null;
@@ -18,9 +19,9 @@ export function SubjectSidebar({ selectedSubject, onSubjectSelect, subjectCounts
   ];
 
   const quickActions = [
-    { name: 'View History', icon: History, color: 'text-secondary' },
-    { name: 'Saved Solutions', icon: Bookmark, color: 'text-accent' },
-    { name: 'Progress', icon: TrendingUp, color: 'text-success' }
+    { name: 'View History', icon: History, color: 'text-secondary', href: '/history' },
+    { name: 'Saved Solutions', icon: Bookmark, color: 'text-accent', href: '/saved-solutions' },
+    { name: 'Progress', icon: TrendingUp, color: 'text-success', href: '/progress' }
   ];
 
   return (
@@ -72,9 +73,12 @@ export function SubjectSidebar({ selectedSubject, onSubjectSelect, subjectCounts
                   variant="ghost"
                   className="w-full justify-start px-4 py-2 h-auto text-sm hover:bg-muted"
                   data-testid={`action-${action.name.toLowerCase().replace(' ', '-')}`}
+                  asChild
                 >
-                  <Icon className={`h-4 w-4 mr-3 ${action.color}`} />
-                  <span>{action.name}</span>
+                  <Link href={action.href}>
+                    <Icon className={`h-4 w-4 mr-3 ${action.color}`} />
+                    <span>{action.name}</span>
+                  </Link>
                 </Button>
               );
             })}

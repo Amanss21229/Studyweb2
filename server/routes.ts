@@ -353,6 +353,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's conversation history
+  app.get("/api/history", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const history = await storage.getUserHistory(userId);
+      res.json(history);
+    } catch (error) {
+      console.error('Get history error:', error);
+      res.status(500).json({ error: 'Failed to get history' });
+    }
+  });
+
+  // Get bookmarked solutions
+  app.get("/api/saved-solutions", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const bookmarked = await storage.getBookmarkedSolutions(userId);
+      res.json(bookmarked);
+    } catch (error) {
+      console.error('Get saved solutions error:', error);
+      res.status(500).json({ error: 'Failed to get saved solutions' });
+    }
+  });
+
+  // Get user progress analytics
+  app.get("/api/progress", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const userId = req.user.claims.sub;
+      const progress = await storage.getUserProgress(userId);
+      res.json(progress);
+    } catch (error) {
+      console.error('Get progress error:', error);
+      res.status(500).json({ error: 'Failed to get progress' });
+    }
+  });
+
+  // Toggle bookmark on solution
+  app.post("/api/solutions/:id/bookmark", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const solution = await storage.toggleBookmark(id);
+      res.json(solution);
+    } catch (error) {
+      console.error('Toggle bookmark error:', error);
+      res.status(500).json({ error: 'Failed to toggle bookmark' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -68,6 +68,7 @@ export const solutions = pgTable("solutions", {
   language: varchar("language", { length: 10 }).notNull(),
   shareUrl: text("share_url").notNull().unique(),
   isPublic: boolean("is_public").notNull().default(false),
+  isBookmarked: boolean("is_bookmarked").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

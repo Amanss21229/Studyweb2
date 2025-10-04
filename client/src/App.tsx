@@ -20,6 +20,9 @@ import { redirectToLogin, redirectToLogout } from "@/lib/authUtils";
 import Home from "@/pages/Home";
 import CompleteProfile from "@/pages/CompleteProfile";
 import Solution from "@/pages/Solution";
+import History from "@/pages/History";
+import SavedSolutions from "@/pages/SavedSolutions";
+import Progress from "@/pages/Progress";
 import NotFound from "@/pages/not-found";
 
 function Header() {
@@ -182,6 +185,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/history" component={History} />
+      <Route path="/saved-solutions" component={SavedSolutions} />
+      <Route path="/progress" component={Progress} />
       <Route path="/solution/:shareUrl">
         {(params) => <Solution shareUrl={params.shareUrl} />}
       </Route>

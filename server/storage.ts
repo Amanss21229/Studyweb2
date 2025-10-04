@@ -36,6 +36,18 @@ export interface IStorage {
   getSolutionsByQuestion(questionId: string): Promise<Solution[]>;
   createSolution(solution: InsertSolution): Promise<Solution>;
   getPublicSolutions(): Promise<Solution[]>;
+  toggleBookmark(solutionId: string): Promise<Solution>;
+  getBookmarkedSolutions(userId: string): Promise<Array<Solution & { question: Question; conversation: Conversation }>>;
+  
+  // Analytics & History
+  getUserHistory(userId: string): Promise<Array<Conversation & { questions: Question[]; questionCount: number }>>;
+  getUserProgress(userId: string): Promise<{
+    totalQuestions: number;
+    subjectBreakdown: Record<string, { count: number; topics: string[]; chapters: string[] }>;
+    weakAreas: Array<{ subject: string; chapter: string; count: number }>;
+    strongAreas: Array<{ subject: string; chapter: string; count: number }>;
+    recentActivity: Array<{ date: string; count: number }>;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -235,6 +247,150 @@ export class DatabaseStorage implements IStorage {
       .where(eq(solutions.isPublic, true))
       .orderBy(desc(solutions.createdAt))
       .limit(20);
+  }
+
+  async toggleBookmark(solutionId: string): Promise<Solution> {
+    const solution = await this.getSolution(solutionId);
+    if (!solution) throw new Error("Solution not found");
+    
+    const [updated] = await db
+      .update(solutions)
+      .set({ isBookmarked: !solution.isBookmarked })
+      .where(eq(solutions.id, solutionId))
+      .returning();
+    return updated;
+  }
+
+  async getBookmarkedSolutions(userId: string): Promise<Array<Solution & { question: Question; conversation: Conversation }>> {
+    const userConversations = await this.getConversationsByUser(userId);
+    const conversationIds = userConversations.map(c => c.id);
+    
+    if (conversationIds.length === 0) return [];
+    
+    const results: Array<Solution & { question: Question; conversation: Conversation }> = [];
+    
+    for (const convId of conversationIds) {
+      const convQuestions = await this.getQuestionsByConversation(convId);
+      const conv = await this.getConversation(convId);
+      
+      for (const question of convQuestions) {
+        const questionSolutions = await db
+          .select()
+          .from(solutions)
+          .where(and(
+            eq(solutions.questionId, question.id),
+            eq(solutions.isBookmarked, true)
+          ));
+        
+        for (const sol of questionSolutions) {
+          results.push({
+            ...sol,
+            question,
+            conversation: conv!
+          });
+        }
+      }
+    }
+    
+    return results.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getUserHistory(userId: string): Promise<Array<Conversation & { questions: Question[]; questionCount: number }>> {
+    const userConversations = await this.getConversationsByUser(userId);
+    
+    const results = await Promise.all(
+      userConversations.map(async (conv) => {
+        const convQuestions = await this.getQuestionsByConversation(conv.id);
+        return {
+          ...conv,
+          questions: convQuestions,
+          questionCount: convQuestions.length
+        };
+      })
+    );
+    
+    return results.filter(r => r.questionCount > 0);
+  }
+
+  async getUserProgress(userId: string): Promise<{
+    totalQuestions: number;
+    subjectBreakdown: Record<string, { count: number; topics: string[]; chapters: string[] }>;
+    weakAreas: Array<{ subject: string; chapter: string; count: number }>;
+    strongAreas: Array<{ subject: string; chapter: string; count: number }>;
+    recentActivity: Array<{ date: string; count: number }>;
+  }> {
+    const userConversations = await this.getConversationsByUser(userId);
+    const conversationIds = userConversations.map(c => c.id);
+    
+    if (conversationIds.length === 0) {
+      return {
+        totalQuestions: 0,
+        subjectBreakdown: {},
+        weakAreas: [],
+        strongAreas: [],
+        recentActivity: []
+      };
+    }
+    
+    let allQuestions: Question[] = [];
+    for (const convId of conversationIds) {
+      const convQuestions = await this.getQuestionsByConversation(convId);
+      allQuestions = [...allQuestions, ...convQuestions];
+    }
+    
+    const subjectBreakdown: Record<string, { count: number; topics: string[]; chapters: string[] }> = {};
+    const chapterCounts: Record<string, number> = {};
+    const activityByDate: Record<string, number> = {};
+    
+    for (const q of allQuestions) {
+      if (q.subject) {
+        if (!subjectBreakdown[q.subject]) {
+          subjectBreakdown[q.subject] = { count: 0, topics: [], chapters: [] };
+        }
+        subjectBreakdown[q.subject].count++;
+        
+        if (q.topic && !subjectBreakdown[q.subject].topics.includes(q.topic)) {
+          subjectBreakdown[q.subject].topics.push(q.topic);
+        }
+        if (q.chapter && !subjectBreakdown[q.subject].chapters.includes(q.chapter)) {
+          subjectBreakdown[q.subject].chapters.push(q.chapter);
+        }
+        
+        if (q.chapter) {
+          const key = `${q.subject}|${q.chapter}`;
+          chapterCounts[key] = (chapterCounts[key] || 0) + 1;
+        }
+      }
+      
+      const dateKey = new Date(q.createdAt).toISOString().split('T')[0];
+      activityByDate[dateKey] = (activityByDate[dateKey] || 0) + 1;
+    }
+    
+    const sortedChapters = Object.entries(chapterCounts).sort((a, b) => a[1] - b[1]);
+    const weakAreas = sortedChapters.slice(0, 5).map(([key, count]) => {
+      const [subject, chapter] = key.split('|');
+      return { subject, chapter, count };
+    });
+    
+    const strongAreas = sortedChapters.slice(-5).reverse().map(([key, count]) => {
+      const [subject, chapter] = key.split('|');
+      return { subject, chapter, count };
+    });
+    
+    const recentActivity = Object.entries(activityByDate)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 30);
+    
+    return {
+      totalQuestions: allQuestions.length,
+      subjectBreakdown,
+      weakAreas,
+      strongAreas,
+      recentActivity
+    };
   }
 }
 
