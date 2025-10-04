@@ -1,6 +1,6 @@
 import { 
   users, conversations, questions, solutions,
-  type User, type InsertUser,
+  type User, type InsertUser, type UpsertUser, type CompleteProfile,
   type Conversation, type InsertConversation,
   type Question, type InsertQuestion,
   type Solution, type InsertSolution
@@ -11,9 +11,11 @@ import { eq, desc, and } from "drizzle-orm";
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  completeUserProfile(id: string, profile: CompleteProfile): Promise<User>;
   updateUserPreferences(id: string, language: string, theme: string): Promise<User>;
+  updateUserUsage(id: string, minutesUsed: number): Promise<User>;
+  resetDailyUsage(id: string): Promise<User>;
 
   // Conversations
   getConversation(id: string): Promise<Conversation | undefined>;
@@ -43,20 +45,86 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+  async completeUserProfile(id: string, profile: CompleteProfile): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        name: profile.name,
+        gender: profile.gender,
+        class: profile.class,
+        stream: profile.stream,
+        isProfileComplete: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
     return user;
   }
 
   async updateUserPreferences(id: string, language: string, theme: string): Promise<User> {
     const [user] = await db
       .update(users)
-      .set({ language, theme })
+      .set({ language, theme, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async updateUserUsage(id: string, minutesUsed: number): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error("User not found");
+
+    const now = new Date();
+    const lastReset = new Date(user.lastUsageReset);
+    const hoursSinceReset = (now.getTime() - lastReset.getTime()) / (1000 * 60 * 60);
+
+    if (hoursSinceReset >= 24) {
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          dailyUsageMinutes: minutesUsed,
+          lastUsageReset: now,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, id))
+        .returning();
+      return updatedUser;
+    }
+
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        dailyUsageMinutes: user.dailyUsageMinutes + minutesUsed,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async resetDailyUsage(id: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        dailyUsageMinutes: 0,
+        lastUsageReset: new Date(),
+        updatedAt: new Date(),
+      })
       .where(eq(users.id, id))
       .returning();
     return user;

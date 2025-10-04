@@ -5,10 +5,12 @@ import { nanoid } from "nanoid";
 import { storage } from "./storage";
 import { generateSolution, generateConversationTitle } from "./services/openai";
 import { extractTextFromImage } from "./services/ocr";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { 
   insertQuestionSchema, 
   insertSolutionSchema, 
-  insertConversationSchema 
+  insertConversationSchema,
+  completeProfileSchema
 } from "@shared/schema";
 
 const upload = multer({ 
@@ -17,6 +19,37 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Setup authentication
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.post('/api/auth/complete-profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profileData = completeProfileSchema.parse(req.body);
+      
+      const user = await storage.completeUserProfile(userId, profileData);
+      res.json(user);
+    } catch (error) {
+      console.error("Error completing profile:", error);
+      res.status(500).json({ message: "Failed to complete profile" });
+    }
+  });
   
   // Create or get conversation
   app.post("/api/conversations", async (req: Request, res: Response) => {
