@@ -1,14 +1,35 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, boolean, index, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  name: text("name"),
+  gender: varchar("gender", { length: 10 }),
+  class: varchar("class", { length: 20 }),
+  stream: varchar("stream", { length: 50 }),
+  isProfileComplete: boolean("is_profile_complete").notNull().default(false),
   language: varchar("language", { length: 10 }).notNull().default('english'),
   theme: varchar("theme", { length: 10 }).notNull().default('light'),
+  dailyUsageMinutes: integer("daily_usage_minutes").notNull().default(0),
+  lastUsageReset: timestamp("last_usage_reset").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const conversations = pgTable("conversations", {
@@ -82,6 +103,22 @@ export const solutionsRelations = relations(solutions, ({ one }) => ({
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
+});
+
+export const upsertUserSchema = createInsertSchema(users).pick({
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  profileImageUrl: true,
+});
+
+export const completeProfileSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  gender: z.enum(["male", "female", "other"]),
+  class: z.string().min(1, "Class is required"),
+  stream: z.string().min(1, "Stream is required"),
 });
 
 export const insertConversationSchema = createInsertSchema(conversations).omit({
@@ -103,6 +140,8 @@ export const insertSolutionSchema = createInsertSchema(solutions).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = z.infer<typeof upsertUserSchema>;
+export type CompleteProfile = z.infer<typeof completeProfileSchema>;
 
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
