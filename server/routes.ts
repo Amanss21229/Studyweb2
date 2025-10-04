@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 import { storage } from "./storage";
 import { generateSolution, generateConversationTitle } from "./services/openai";
 import { extractTextFromImage } from "./services/ocr";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, checkFreeUserLimit, requireAuthForPremiumFeatures } from "./replitAuth";
 import { 
   insertQuestionSchema, 
   insertSolutionSchema, 
@@ -49,6 +49,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error completing profile:", error);
       res.status(500).json({ message: "Failed to complete profile" });
     }
+  });
+
+  // Get usage stats for free users
+  app.get('/api/auth/usage-stats', async (req: any, res) => {
+    if (req.isAuthenticated()) {
+      return res.json({ 
+        isAuthenticated: true,
+        unlimited: true 
+      });
+    }
+
+    const usageMinutes = req.session?.totalUsageMinutes || 0;
+    const remainingMinutes = Math.max(0, 120 - usageMinutes);
+
+    res.json({
+      isAuthenticated: false,
+      usedMinutes: usageMinutes,
+      remainingMinutes,
+      totalMinutes: 120,
+      limitExceeded: remainingMinutes === 0
+    });
   });
   
   // Create or get conversation
@@ -113,13 +134,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Submit question (text)
-  app.post("/api/questions/text", async (req: Request, res: Response) => {
+  // Submit question (text) - Available to all, with time tracking for free users
+  app.post("/api/questions/text", checkFreeUserLimit, async (req: any, res: Response) => {
     try {
       const { conversationId, questionText, language = 'english' } = req.body;
       
       if (!questionText?.trim()) {
         return res.status(400).json({ error: 'Question text is required' });
+      }
+
+      // Track usage for free users (add 1 minute per question)
+      if (!req.isAuthenticated() && req.session) {
+        req.session.totalUsageMinutes = (req.session.totalUsageMinutes || 0) + 1;
       }
       
       // Create question
@@ -174,8 +200,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Submit question (image)
-  app.post("/api/questions/image", upload.single('image'), async (req: Request, res: Response) => {
+  // Submit question (image) - Requires login
+  app.post("/api/questions/image", requireAuthForPremiumFeatures, upload.single('image'), async (req: Request, res: Response) => {
     try {
       const { conversationId, language = 'english' } = req.body;
       

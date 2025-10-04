@@ -14,11 +14,14 @@ import {
   SquareRadical,
   PenTool,
   MicIcon,
-  Square
+  Square,
+  Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AudioRecorder } from "@/lib/audio";
 import { useLanguage } from "./LanguageProvider";
+import { useAuth } from "@/hooks/useAuth";
+import { redirectToLogin } from "@/lib/authUtils";
 
 type InputMode = 'text' | 'image' | 'audio';
 
@@ -42,6 +45,20 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
   const { toast } = useToast();
   const { language } = useLanguage();
+  const { isAuthenticated } = useAuth();
+
+  const handlePremiumFeatureClick = (feature: 'image' | 'audio') => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: `${feature === 'image' ? 'Image upload' : 'Voice input'} requires login. Please login to continue.`,
+        variant: "destructive",
+      });
+      setTimeout(() => redirectToLogin(), 1500);
+      return false;
+    }
+    return true;
+  };
 
   const handleTextSubmit = () => {
     if (!textInput.trim() || isLoading) return;
@@ -165,17 +182,29 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
             {inputModes.map((mode) => {
               const Icon = mode.icon;
               const isActive = inputMode === mode.id;
+              const isPremium = mode.id === 'image' || mode.id === 'audio';
+              const isLocked = isPremium && !isAuthenticated;
               
               return (
                 <Button
                   key={mode.id}
                   variant={isActive ? "default" : "ghost"}
-                  className={`flex items-center space-x-2 px-4 py-2 whitespace-nowrap ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                  onClick={() => setInputMode(mode.id)}
+                  className={`flex items-center space-x-2 px-4 py-2 whitespace-nowrap ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'} ${isLocked ? 'opacity-70' : ''}`}
+                  onClick={() => {
+                    if (isPremium && !handlePremiumFeatureClick(mode.id)) {
+                      return;
+                    }
+                    setInputMode(mode.id);
+                  }}
                   data-testid={`input-mode-${mode.id}`}
                 >
-                  <Icon className="h-4 w-4" />
+                  {isLocked ? (
+                    <Lock className="h-3 w-3 mr-1" />
+                  ) : (
+                    <Icon className="h-4 w-4" />
+                  )}
                   <span className="text-sm font-medium">{mode.name}</span>
+                  {isLocked && <span className="text-xs ml-1">(Login)</span>}
                 </Button>
               );
             })}

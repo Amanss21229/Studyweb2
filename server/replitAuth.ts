@@ -155,3 +155,47 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     return;
   }
 };
+
+// Middleware to check free user time limit (2 hours per day)
+export const checkFreeUserLimit: RequestHandler = (req: any, res, next) => {
+  // If authenticated, skip this check
+  if (req.isAuthenticated()) {
+    return next();
+  }
+
+  // Initialize session usage tracking
+  if (!req.session.usageStartTime) {
+    req.session.usageStartTime = Date.now();
+    req.session.totalUsageMinutes = 0;
+  }
+
+  // Check if we need to reset (24 hours passed)
+  const now = Date.now();
+  const hoursSinceStart = (now - req.session.usageStartTime) / (1000 * 60 * 60);
+  
+  if (hoursSinceStart >= 24) {
+    req.session.usageStartTime = now;
+    req.session.totalUsageMinutes = 0;
+  }
+
+  // Check if limit exceeded (120 minutes = 2 hours)
+  if (req.session.totalUsageMinutes >= 120) {
+    return res.status(403).json({ 
+      message: "Daily limit exceeded. Please login to continue using all features.",
+      limitExceeded: true 
+    });
+  }
+
+  next();
+};
+
+// Middleware to require authentication for premium features
+export const requireAuthForPremiumFeatures: RequestHandler = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(403).json({ 
+      message: "This feature requires login. Please login to continue.",
+      requiresAuth: true 
+    });
+  }
+  next();
+};
