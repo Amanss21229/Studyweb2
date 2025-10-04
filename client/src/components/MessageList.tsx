@@ -20,9 +20,8 @@ export function MessageList({ messages, isTyping, onShare }: MessageListProps) {
 
   const bookmarkMutation = useMutation({
     mutationFn: async (solutionId: string) => {
-      return await apiRequest(`/api/solutions/${solutionId}/bookmark`, {
-        method: 'POST',
-      });
+      const response = await apiRequest('POST', `/api/solutions/${solutionId}/bookmark`);
+      return await response.json();
     },
     onSuccess: (data, solutionId) => {
       setBookmarkedIds(prev => {

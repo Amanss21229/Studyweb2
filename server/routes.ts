@@ -73,12 +73,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Create or get conversation
-  app.post("/api/conversations", async (req: Request, res: Response) => {
+  app.post("/api/conversations", async (req: any, res: Response) => {
     try {
-      const { userId, title } = req.body;
+      const { title } = req.body;
+      
+      // Use authenticated user ID if logged in, otherwise null for guest
+      const userId = req.isAuthenticated() ? req.user.claims.sub : null;
       
       const conversation = await storage.createConversation({
-        userId: userId || null,
+        userId,
         title: title || null,
       });
       
