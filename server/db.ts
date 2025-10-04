@@ -3,7 +3,16 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+// Configure WebSocket for Replit environment
+class CustomWebSocket extends ws {
+  constructor(address: string | URL, protocols?: string | string[]) {
+    super(address, protocols, {
+      rejectUnauthorized: false
+    });
+  }
+}
+
+neonConfig.webSocketConstructor = CustomWebSocket as any;
 neonConfig.pipelineTLS = false;
 neonConfig.pipelineConnect = false;
 
