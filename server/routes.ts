@@ -284,6 +284,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get subject counts
+  app.get("/api/stats/subject-counts", async (req: Request, res: Response) => {
+    try {
+      const counts = await storage.getSubjectCounts();
+      res.json(counts);
+    } catch (error) {
+      console.error('Get subject counts error:', error);
+      res.status(500).json({ error: 'Failed to get subject counts' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
