@@ -1,5 +1,11 @@
 import { InferenceClient } from "@huggingface/inference";
 
+if (!process.env.HUGGINGFACE_API_KEY) {
+  console.warn('⚠️  HUGGINGFACE_API_KEY not found! AI features will not work.');
+  console.warn('   Please add HUGGINGFACE_API_KEY to your environment variables.');
+  console.warn('   Get your key from: https://huggingface.co/settings/tokens');
+}
+
 const hf = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
 
 interface AIResponse {
@@ -19,6 +25,10 @@ export async function generateSolution(
   language: string = 'english',
   userName?: string
 ): Promise<AIResponse> {
+  if (!process.env.HUGGINGFACE_API_KEY) {
+    throw new Error('HuggingFace API key not configured. Please add HUGGINGFACE_API_KEY to environment variables.');
+  }
+
   try {
     // Detect if this is a conversational query
     const isConversational = isConversationalQuery(question);
