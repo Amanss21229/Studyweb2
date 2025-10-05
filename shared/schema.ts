@@ -28,6 +28,17 @@ export const users = pgTable("users", {
   theme: varchar("theme", { length: 10 }).notNull().default('light'),
   dailyUsageMinutes: integer("daily_usage_minutes").notNull().default(0),
   lastUsageReset: timestamp("last_usage_reset").defaultNow().notNull(),
+  conversationPreferences: jsonb("conversation_preferences").$type<{
+    chatStyle?: string;
+    topicInterests?: string[];
+    responseLength?: 'short' | 'medium' | 'long';
+    emojiUsage?: 'low' | 'medium' | 'high';
+    formalityLevel?: 'casual' | 'friendly' | 'formal';
+    conversationSamples?: Array<{
+      userMessage: string;
+      timestamp: string;
+    }>;
+  }>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
