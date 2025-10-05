@@ -2,6 +2,9 @@ export class AudioRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
   private recognition: any = null;
+  private transcriptResult: string = '';
+  private isStopping: boolean = false;
+  private isRecognitionActive: boolean = false;
 
   constructor() {
     if ('webkitSpeechRecognition' in window) {
@@ -11,17 +14,21 @@ export class AudioRecorder {
     }
 
     if (this.recognition) {
-      this.recognition.continuous = false;
-      this.recognition.interimResults = false;
-      this.recognition.lang = 'en-US';
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
+      this.recognition.maxAlternatives = 1;
     }
   }
 
-  async startRecording(): Promise<void> {
+  async startRecording(language: string = 'en-US'): Promise<void> {
+    this.cleanup();
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       this.mediaRecorder = new MediaRecorder(stream);
       this.audioChunks = [];
+      this.transcriptResult = '';
+      this.isStopping = false;
 
       this.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -30,55 +37,93 @@ export class AudioRecorder {
       };
 
       this.mediaRecorder.start();
+
+      if (this.recognition) {
+        this.recognition.lang = this.getLanguageCode(language);
+        
+        this.recognition.onresult = (event: any) => {
+          let finalTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            }
+          }
+          
+          if (finalTranscript) {
+            this.transcriptResult += finalTranscript;
+          }
+        };
+
+        this.recognition.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          
+          if (this.isStopping && (event.error === 'aborted' || event.error === 'no-speech')) {
+            return;
+          }
+        };
+
+        this.recognition.onend = () => {
+          this.isRecognitionActive = false;
+          console.log('Speech recognition ended');
+        };
+
+        this.recognition.onstart = () => {
+          this.isRecognitionActive = true;
+        };
+
+        this.recognition.start();
+      }
     } catch (error) {
+      this.cleanup();
+      console.error('Failed to start recording:', error);
       throw new Error('Failed to start recording. Please check microphone permissions.');
     }
   }
 
-  async stopRecording(): Promise<Blob> {
+  async stopRecording(): Promise<string> {
     return new Promise((resolve, reject) => {
+      this.isStopping = true;
+
+      if (this.recognition && this.isRecognitionActive) {
+        try {
+          this.recognition.stop();
+        } catch (error) {
+          console.warn('Error stopping recognition:', error);
+        }
+      }
+
       if (!this.mediaRecorder) {
+        this.cleanup();
         reject(new Error('No active recording'));
         return;
       }
 
       this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-        resolve(audioBlob);
+        if (this.mediaRecorder && this.mediaRecorder.stream) {
+          this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+
+        setTimeout(() => {
+          const transcript = this.transcriptResult.trim();
+          
+          this.cleanup();
+          
+          if (!transcript) {
+            reject(new Error('No speech detected. Please try again and speak clearly.'));
+          } else {
+            resolve(transcript);
+          }
+        }, 500);
       };
 
-      this.mediaRecorder.stop();
-      
-      // Stop all tracks
-      if (this.mediaRecorder.stream) {
-        this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      try {
+        this.mediaRecorder.stop();
+      } catch (error) {
+        this.cleanup();
+        reject(new Error('Failed to stop recording'));
       }
-    });
-  }
-
-  async transcribeAudio(language: string = 'en-US'): Promise<string> {
-    return new Promise((resolve, reject) => {
-      if (!this.recognition) {
-        reject(new Error('Speech recognition not supported in this browser'));
-        return;
-      }
-
-      this.recognition.lang = this.getLanguageCode(language);
-
-      this.recognition.onresult = (event: any) => {
-        const result = event.results[0]?.[0]?.transcript || '';
-        resolve(result);
-      };
-
-      this.recognition.onerror = (event: any) => {
-        reject(new Error(`Speech recognition error: ${event.error}`));
-      };
-
-      this.recognition.onend = () => {
-        // Recognition ended
-      };
-
-      this.recognition.start();
     });
   }
 
@@ -98,5 +143,34 @@ export class AudioRecorder {
 
   isSpeechRecognitionSupported(): boolean {
     return this.recognition !== null;
+  }
+
+  cleanup(): void {
+    try {
+      if (this.recognition && this.isRecognitionActive) {
+        this.recognition.stop();
+      }
+    } catch (error) {
+      console.warn('Cleanup: Error stopping recognition:', error);
+    }
+    
+    try {
+      if (this.mediaRecorder) {
+        if (this.mediaRecorder.state !== 'inactive') {
+          this.mediaRecorder.stop();
+        }
+        if (this.mediaRecorder.stream) {
+          this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+        this.mediaRecorder = null;
+      }
+    } catch (error) {
+      console.warn('Cleanup: Error stopping media recorder:', error);
+    }
+    
+    this.transcriptResult = '';
+    this.isRecognitionActive = false;
+    this.isStopping = false;
+    this.audioChunks = [];
   }
 }

@@ -124,11 +124,20 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
       return;
     }
 
+    if (!recorder.isSpeechRecognitionSupported()) {
+      toast({
+        title: "Speech recognition not supported",
+        description: "Your browser doesn't support speech recognition. Please use Chrome, Edge, or Safari.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!isRecording) {
       try {
-        await recorder.startRecording();
+        await recorder.startRecording(language);
         setIsRecording(true);
-        setRecordingStatus('Recording... Click to stop');
+        setRecordingStatus('Listening... Speak now and click to stop when done');
         setShowWaveform(true);
       } catch (error) {
         toast({
@@ -142,23 +151,25 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
         setRecordingStatus('Processing audio...');
         setShowWaveform(false);
         
-        if (recorder.isSpeechRecognitionSupported()) {
-          const transcription = await recorder.transcribeAudio(language);
+        const transcription = await recorder.stopRecording();
+        
+        if (transcription && transcription.trim()) {
           onSubmitAudio(transcription);
         } else {
           toast({
-            title: "Speech recognition not supported",
-            description: "Your browser doesn't support speech recognition",
+            title: "No speech detected",
+            description: "Please try again and speak clearly.",
             variant: "destructive",
           });
         }
         
         setIsRecording(false);
         setRecordingStatus('Click to start recording');
-      } catch (error) {
+      } catch (error: any) {
+        const errorMessage = error?.message || "Failed to process audio. Please try again.";
         toast({
           title: "Processing failed",
-          description: "Failed to process audio. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         });
         setIsRecording(false);
