@@ -86,6 +86,10 @@ X-API-Key: your-api-key
 
 ## API Key Management
 
+### Security Note
+
+API keys are hashed using SHA-256 before storage. The plaintext key is only shown once during creation. Make sure to save it securely - you won't be able to retrieve it again.
+
 ### Generate API Key
 
 **Endpoint:** `POST /api/keys`
@@ -109,6 +113,8 @@ X-API-Key: your-api-key
   "message": "API key created successfully. Save this key securely - it will not be shown again."
 }
 ```
+
+**Important:** The `key` field contains the plaintext API key. This is the ONLY time you'll see it. Store it securely.
 
 ### List API Keys
 

@@ -6,6 +6,10 @@ export function generateApiKey(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
+export function hashApiKey(key: string): string {
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
+
 export async function validateApiKey(req: Request, res: Response, next: NextFunction) {
   const apiKey = req.headers['x-api-key'] as string;
   
@@ -17,7 +21,8 @@ export async function validateApiKey(req: Request, res: Response, next: NextFunc
   }
 
   try {
-    const key = await storage.getApiKey(apiKey);
+    const hashedKey = hashApiKey(apiKey);
+    const key = await storage.getApiKey(hashedKey);
     
     if (!key) {
       return res.status(401).json({ 
@@ -26,7 +31,7 @@ export async function validateApiKey(req: Request, res: Response, next: NextFunc
       });
     }
 
-    await storage.updateApiKeyLastUsed(apiKey);
+    await storage.updateApiKeyLastUsed(hashedKey);
     
     (req as any).apiKey = key;
     next();

@@ -6,7 +6,7 @@ import { storage } from "./storage";
 import { generateSolution, generateConversationTitle } from "./services/openai";
 import { extractTextFromImage } from "./services/ocr";
 import { setupAuth, isAuthenticated, checkFreeUserLimit, requireAuthForPremiumFeatures } from "./replitAuth";
-import { generateApiKey, validateApiKey } from "./apiKeyAuth";
+import { generateApiKey, hashApiKey, validateApiKey } from "./apiKeyAuth";
 import { 
   insertQuestionSchema, 
   insertSolutionSchema, 
@@ -83,10 +83,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'API key name is required' });
       }
 
-      const key = generateApiKey();
+      const plainKey = generateApiKey();
+      const hashedKey = hashApiKey(plainKey);
+      
       const apiKey = await storage.createApiKey({
         userId,
-        key,
+        key: hashedKey,
         name: name.trim(),
         isActive: true,
         lastUsed: null,
@@ -95,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         id: apiKey.id,
         name: apiKey.name,
-        key: apiKey.key,
+        key: plainKey,
         createdAt: apiKey.createdAt,
         message: 'API key created successfully. Save this key securely - it will not be shown again.'
       });
