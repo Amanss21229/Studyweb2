@@ -43,16 +43,26 @@ export class AudioRecorder {
         
         this.recognition.onresult = (event: any) => {
           let finalTranscript = '';
+          let interimTranscript = '';
           
           for (let i = event.resultIndex; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
               finalTranscript += transcript + ' ';
+            } else {
+              interimTranscript += transcript;
             }
           }
           
+          // Store final results
           if (finalTranscript) {
             this.transcriptResult += finalTranscript;
+            console.log('Got final transcript:', finalTranscript);
+          }
+          
+          // Also log interim results for debugging
+          if (interimTranscript) {
+            console.log('Interim transcript:', interimTranscript);
           }
         };
 
@@ -86,43 +96,65 @@ export class AudioRecorder {
     return new Promise((resolve, reject) => {
       this.isStopping = true;
 
-      if (this.recognition && this.isRecognitionActive) {
-        try {
-          this.recognition.stop();
-        } catch (error) {
-          console.warn('Error stopping recognition:', error);
-        }
-      }
-
       if (!this.mediaRecorder) {
         this.cleanup();
         reject(new Error('No active recording'));
         return;
       }
 
-      this.mediaRecorder.onstop = () => {
+      // Set up a completion handler
+      const completeRecording = () => {
         if (this.mediaRecorder && this.mediaRecorder.stream) {
           this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
         }
 
+        // Give more time for final speech recognition results
         setTimeout(() => {
           const transcript = this.transcriptResult.trim();
           
+          console.log('Final transcript:', transcript);
           this.cleanup();
           
           if (!transcript) {
-            reject(new Error('No speech detected. Please try again and speak clearly.'));
+            reject(new Error('No speech detected. Please speak clearly and try again.'));
           } else {
             resolve(transcript);
           }
-        }, 500);
+        }, 1000); // Increased from 500ms to 1000ms
+      };
+
+      // Stop recognition first and wait for final results
+      if (this.recognition && this.isRecognitionActive) {
+        this.recognition.onend = () => {
+          this.isRecognitionActive = false;
+          console.log('Speech recognition ended, transcript:', this.transcriptResult);
+          // Wait a bit for final results to be processed
+          setTimeout(() => {
+            completeRecording();
+          }, 300);
+        };
+        
+        try {
+          this.recognition.stop();
+        } catch (error) {
+          console.warn('Error stopping recognition:', error);
+          completeRecording();
+        }
+      } else {
+        completeRecording();
+      }
+
+      // Stop media recorder
+      this.mediaRecorder.onstop = () => {
+        console.log('Media recorder stopped');
       };
 
       try {
-        this.mediaRecorder.stop();
+        if (this.mediaRecorder.state !== 'inactive') {
+          this.mediaRecorder.stop();
+        }
       } catch (error) {
-        this.cleanup();
-        reject(new Error('Failed to stop recording'));
+        console.warn('Error stopping media recorder:', error);
       }
     });
   }

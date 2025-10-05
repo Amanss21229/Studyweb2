@@ -38,7 +38,7 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingStatus, setRecordingStatus] = useState('Click to start recording');
+  const [recordingStatus, setRecordingStatus] = useState('Click microphone to start recording');
   const [showWaveform, setShowWaveform] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -137,8 +137,13 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
       try {
         await recorder.startRecording(language);
         setIsRecording(true);
-        setRecordingStatus('Listening... Speak now and click to stop when done');
+        setRecordingStatus('🎤 Listening... Speak clearly, then click to stop');
         setShowWaveform(true);
+        
+        toast({
+          title: "Recording started",
+          description: "Speak clearly into your microphone",
+        });
       } catch (error) {
         toast({
           title: "Recording failed",
@@ -148,23 +153,27 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
       }
     } else {
       try {
-        setRecordingStatus('Processing audio...');
+        setRecordingStatus('⏳ Processing your voice...');
         setShowWaveform(false);
         
         const transcription = await recorder.stopRecording();
         
         if (transcription && transcription.trim()) {
+          toast({
+            title: "Voice recognized",
+            description: `Detected: "${transcription.substring(0, 50)}${transcription.length > 50 ? '...' : ''}"`,
+          });
           onSubmitAudio(transcription);
         } else {
           toast({
             title: "No speech detected",
-            description: "Please try again and speak clearly.",
+            description: "Please try again. Speak clearly and record for at least 2-3 seconds.",
             variant: "destructive",
           });
         }
         
         setIsRecording(false);
-        setRecordingStatus('Click to start recording');
+        setRecordingStatus('Click microphone to start recording');
       } catch (error: any) {
         const errorMessage = error?.message || "Failed to process audio. Please try again.";
         toast({
@@ -173,7 +182,7 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
           variant: "destructive",
         });
         setIsRecording(false);
-        setRecordingStatus('Click to start recording');
+        setRecordingStatus('Click microphone to start recording');
       }
     }
   };
