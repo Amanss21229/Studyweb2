@@ -9,16 +9,16 @@ export class AudioRecorder {
   private hasReceivedResults: boolean = false;
 
   constructor() {
-    if ('webkitSpeechRecognition' in window) {
-      this.recognition = new (window as any).webkitSpeechRecognition();
-    } else if ('SpeechRecognition' in window) {
-      this.recognition = new (window as any).SpeechRecognition();
-    }
-
-    if (this.recognition) {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+      this.recognition = new SpeechRecognition();
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
       this.recognition.maxAlternatives = 1;
+      console.log('Speech Recognition initialized successfully');
+    } else {
+      console.error('Speech Recognition not supported in this browser');
     }
   }
 
@@ -43,16 +43,23 @@ export class AudioRecorder {
       this.mediaRecorder.start();
 
       if (this.recognition) {
-        this.recognition.lang = this.getLanguageCode(language);
+        const langCode = this.getLanguageCode(language);
+        this.recognition.lang = langCode;
+        
+        console.log('🎙️ Setting up speech recognition with language:', langCode);
         
         this.recognition.onresult = (event: any) => {
+          console.log('📝 Speech recognition result event received');
           this.hasReceivedResults = true;
           let finalTranscript = '';
           let interimTranscript = '';
           
           for (let i = event.resultIndex; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
+            const isFinal = event.results[i].isFinal;
+            console.log(`Result ${i}: "${transcript}" (final: ${isFinal})`);
+            
+            if (isFinal) {
               finalTranscript += transcript + ' ';
             } else {
               interimTranscript += transcript;
@@ -62,40 +69,61 @@ export class AudioRecorder {
           // Store final results
           if (finalTranscript) {
             this.transcriptResult += finalTranscript;
-            console.log('Got final transcript:', finalTranscript);
+            console.log('✅ Got final transcript:', finalTranscript);
           }
           
           // Store interim results as fallback
           if (interimTranscript) {
             this.interimResult = interimTranscript;
-            console.log('Interim transcript:', interimTranscript);
+            console.log('⏳ Interim transcript:', interimTranscript);
           }
         };
 
         this.recognition.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error);
+          console.error('❌ Speech recognition error:', event.error, event);
           
           if (this.isStopping && (event.error === 'aborted' || event.error === 'no-speech')) {
+            console.log('Ignoring error during stop:', event.error);
             return;
           }
         };
 
         this.recognition.onend = () => {
           this.isRecognitionActive = false;
-          console.log('Speech recognition ended');
+          console.log('🛑 Speech recognition ended');
         };
 
         this.recognition.onstart = () => {
           this.isRecognitionActive = true;
-          console.log('Speech recognition started, language:', this.recognition.lang);
+          console.log('✅ Speech recognition STARTED successfully with lang:', this.recognition.lang);
+        };
+
+        this.recognition.onaudiostart = () => {
+          console.log('🔊 Audio capture started');
+        };
+
+        this.recognition.onaudioend = () => {
+          console.log('🔇 Audio capture ended');
+        };
+
+        this.recognition.onspeechstart = () => {
+          console.log('🗣️ Speech detected!');
+        };
+
+        this.recognition.onspeechend = () => {
+          console.log('🤐 Speech ended');
         };
 
         try {
           this.recognition.start();
-          console.log('Starting speech recognition...');
+          console.log('🚀 Calling recognition.start()...');
         } catch (error) {
-          console.error('Failed to start speech recognition:', error);
+          console.error('💥 Failed to start speech recognition:', error);
+          throw error;
         }
+      } else {
+        console.error('❌ No recognition object available!');
+        throw new Error('Speech recognition not available');
       }
     } catch (error) {
       this.cleanup();
