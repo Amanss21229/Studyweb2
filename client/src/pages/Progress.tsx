@@ -49,7 +49,7 @@ export default function Progress() {
             Please log in to view your progress and analytics.
           </p>
           <Button asChild>
-            <a href="/api/login">Login with Google</a>
+            <a href="/api/auth/google">Login with Google</a>
           </Button>
         </Card>
       </div>
