@@ -72,6 +72,31 @@ export const solutions = pgTable("solutions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const examUpdates = pgTable("exam_updates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  examType: varchar("exam_type", { length: 10 }).notNull(), // 'neet' or 'jee'
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  sourceUrl: text("source_url"),
+  isVerified: boolean("is_verified").notNull().default(true),
+  publishedAt: timestamp("published_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const examCriteria = pgTable("exam_criteria", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  examType: varchar("exam_type", { length: 10 }).notNull(), // 'neet' or 'jee'
+  pattern: text("pattern").notNull(),
+  criteria: text("criteria").notNull(),
+  syllabus: jsonb("syllabus").$type<{
+    subjects: Array<{
+      name: string;
+      topics: string[];
+    }>;
+  }>().notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   conversations: many(conversations),
@@ -138,6 +163,15 @@ export const insertSolutionSchema = createInsertSchema(solutions).omit({
   createdAt: true,
 });
 
+export const insertExamUpdateSchema = createInsertSchema(examUpdates).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertExamCriteriaSchema = createInsertSchema(examCriteria).omit({
+  id: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -152,3 +186,9 @@ export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 
 export type Solution = typeof solutions.$inferSelect;
 export type InsertSolution = z.infer<typeof insertSolutionSchema>;
+
+export type ExamUpdate = typeof examUpdates.$inferSelect;
+export type InsertExamUpdate = z.infer<typeof insertExamUpdateSchema>;
+
+export type ExamCriteria = typeof examCriteria.$inferSelect;
+export type InsertExamCriteria = z.infer<typeof insertExamCriteriaSchema>;
