@@ -3,8 +3,10 @@ export class AudioRecorder {
   private audioChunks: Blob[] = [];
   private recognition: any = null;
   private transcriptResult: string = '';
+  private interimResult: string = '';
   private isStopping: boolean = false;
   private isRecognitionActive: boolean = false;
+  private hasReceivedResults: boolean = false;
 
   constructor() {
     if ('webkitSpeechRecognition' in window) {
@@ -28,6 +30,8 @@ export class AudioRecorder {
       this.mediaRecorder = new MediaRecorder(stream);
       this.audioChunks = [];
       this.transcriptResult = '';
+      this.interimResult = '';
+      this.hasReceivedResults = false;
       this.isStopping = false;
 
       this.mediaRecorder.ondataavailable = (event) => {
@@ -42,6 +46,7 @@ export class AudioRecorder {
         this.recognition.lang = this.getLanguageCode(language);
         
         this.recognition.onresult = (event: any) => {
+          this.hasReceivedResults = true;
           let finalTranscript = '';
           let interimTranscript = '';
           
@@ -60,8 +65,9 @@ export class AudioRecorder {
             console.log('Got final transcript:', finalTranscript);
           }
           
-          // Also log interim results for debugging
+          // Store interim results as fallback
           if (interimTranscript) {
+            this.interimResult = interimTranscript;
             console.log('Interim transcript:', interimTranscript);
           }
         };
@@ -81,9 +87,15 @@ export class AudioRecorder {
 
         this.recognition.onstart = () => {
           this.isRecognitionActive = true;
+          console.log('Speech recognition started, language:', this.recognition.lang);
         };
 
-        this.recognition.start();
+        try {
+          this.recognition.start();
+          console.log('Starting speech recognition...');
+        } catch (error) {
+          console.error('Failed to start speech recognition:', error);
+        }
       }
     } catch (error) {
       this.cleanup();
@@ -110,13 +122,24 @@ export class AudioRecorder {
 
         // Give more time for final speech recognition results
         setTimeout(() => {
-          const transcript = this.transcriptResult.trim();
+          let transcript = this.transcriptResult.trim();
+          
+          // If no final transcript but we have interim results, use them
+          if (!transcript && this.interimResult) {
+            transcript = this.interimResult.trim();
+            console.log('Using interim transcript:', transcript);
+          }
           
           console.log('Final transcript:', transcript);
+          console.log('Has received results:', this.hasReceivedResults);
           this.cleanup();
           
           if (!transcript) {
-            reject(new Error('No speech detected. Please speak clearly and try again.'));
+            if (this.hasReceivedResults) {
+              reject(new Error('Could not capture speech properly. Please try again with a longer recording.'));
+            } else {
+              reject(new Error('No speech detected. Please speak clearly into the microphone and try again.'));
+            }
           } else {
             resolve(transcript);
           }
@@ -201,6 +224,8 @@ export class AudioRecorder {
     }
     
     this.transcriptResult = '';
+    this.interimResult = '';
+    this.hasReceivedResults = false;
     this.isRecognitionActive = false;
     this.isStopping = false;
     this.audioChunks = [];
