@@ -97,9 +97,20 @@ export const examCriteria = pgTable("exam_criteria", {
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });
 
+export const apiKeys = pgTable("api_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  key: varchar("key", { length: 64 }).notNull().unique(),
+  name: text("name").notNull(),
+  lastUsed: timestamp("last_used"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   conversations: many(conversations),
+  apiKeys: many(apiKeys),
 }));
 
 export const conversationsRelations = relations(conversations, ({ one, many }) => ({
@@ -122,6 +133,13 @@ export const solutionsRelations = relations(solutions, ({ one }) => ({
   question: one(questions, {
     fields: [solutions.questionId],
     references: [questions.id],
+  }),
+}));
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  user: one(users, {
+    fields: [apiKeys.userId],
+    references: [users.id],
   }),
 }));
 
@@ -172,6 +190,11 @@ export const insertExamCriteriaSchema = createInsertSchema(examCriteria).omit({
   id: true,
 });
 
+export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -192,3 +215,6 @@ export type InsertExamUpdate = z.infer<typeof insertExamUpdateSchema>;
 
 export type ExamCriteria = typeof examCriteria.$inferSelect;
 export type InsertExamCriteria = z.infer<typeof insertExamCriteriaSchema>;
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;

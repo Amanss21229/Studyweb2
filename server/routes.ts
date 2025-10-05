@@ -6,6 +6,7 @@ import { storage } from "./storage";
 import { generateSolution, generateConversationTitle } from "./services/openai";
 import { extractTextFromImage } from "./services/ocr";
 import { setupAuth, isAuthenticated, checkFreeUserLimit, requireAuthForPremiumFeatures } from "./replitAuth";
+import { generateApiKey, validateApiKey } from "./apiKeyAuth";
 import { 
   insertQuestionSchema, 
   insertSolutionSchema, 
@@ -70,6 +71,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       totalMinutes: 120,
       limitExceeded: remainingMinutes === 0
     });
+  });
+
+  // API Key Management Routes
+  app.post('/api/keys', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { name } = req.body;
+      
+      if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'API key name is required' });
+      }
+
+      const key = generateApiKey();
+      const apiKey = await storage.createApiKey({
+        userId,
+        key,
+        name: name.trim(),
+        isActive: true,
+        lastUsed: null,
+      });
+
+      res.json({ 
+        id: apiKey.id,
+        name: apiKey.name,
+        key: apiKey.key,
+        createdAt: apiKey.createdAt,
+        message: 'API key created successfully. Save this key securely - it will not be shown again.'
+      });
+    } catch (error) {
+      console.error('Create API key error:', error);
+      res.status(500).json({ error: 'Failed to create API key' });
+    }
+  });
+
+  app.get('/api/keys', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const keys = await storage.getApiKeysByUser(userId);
+      
+      const sanitizedKeys = keys.map(k => ({
+        id: k.id,
+        name: k.name,
+        key: `${k.key.substring(0, 8)}...${k.key.substring(k.key.length - 4)}`,
+        lastUsed: k.lastUsed,
+        isActive: k.isActive,
+        createdAt: k.createdAt,
+      }));
+      
+      res.json(sanitizedKeys);
+    } catch (error) {
+      console.error('Get API keys error:', error);
+      res.status(500).json({ error: 'Failed to get API keys' });
+    }
+  });
+
+  app.delete('/api/keys/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const keys = await storage.getApiKeysByUser(userId);
+      const keyToDelete = keys.find(k => k.id === id);
+      
+      if (!keyToDelete) {
+        return res.status(404).json({ error: 'API key not found' });
+      }
+
+      await storage.deleteApiKey(id);
+      res.json({ message: 'API key revoked successfully' });
+    } catch (error) {
+      console.error('Delete API key error:', error);
+      res.status(500).json({ error: 'Failed to delete API key' });
+    }
   });
   
   // Create or get conversation
@@ -306,10 +380,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API endpoint for external integrations (Telegram bot)
-  app.post("/api/solution", async (req: Request, res: Response) => {
+  // API endpoint for external integrations (Telegram bot) - Requires API Key
+  app.post("/api/solution", validateApiKey, async (req: Request, res: Response) => {
     try {
-      const { question, language = 'english' } = req.body;
+      const { question, language = 'english', userName } = req.body;
       
       if (!question?.trim()) {
         return res.status(400).json({ error: 'Question is required' });
@@ -328,8 +402,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         inputType: 'text',
       });
       
-      // Generate AI solution
-      const aiResponse = await generateSolution(question, language);
+      // Generate AI solution with optional user name
+      const aiResponse = await generateSolution(question, language, userName);
       
       // Create solution
       const shareUrl = `${nanoid(12)}`;
@@ -347,8 +421,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.json({
+        success: true,
         solutionUrl: `${req.protocol}://${req.get('host')}/solution/${shareUrl}`,
-        solution: aiResponse
+        solution: {
+          answer: aiResponse.answer,
+          subject: aiResponse.subject,
+          chapter: aiResponse.chapter,
+          topic: aiResponse.topic,
+          neetJeePyq: aiResponse.neetJeePyq,
+        }
       });
     } catch (error) {
       console.error('External solution API error:', error);
