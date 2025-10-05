@@ -1,9 +1,11 @@
 import { 
-  users, conversations, questions, solutions,
+  users, conversations, questions, solutions, examUpdates, examCriteria,
   type User, type InsertUser, type UpsertUser, type CompleteProfile,
   type Conversation, type InsertConversation,
   type Question, type InsertQuestion,
-  type Solution, type InsertSolution
+  type Solution, type InsertSolution,
+  type ExamUpdate, type InsertExamUpdate,
+  type ExamCriteria, type InsertExamCriteria
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -48,6 +50,12 @@ export interface IStorage {
     strongAreas: Array<{ subject: string; chapter: string; count: number }>;
     recentActivity: Array<{ date: string; count: number }>;
   }>;
+
+  // Exam Updates & Criteria
+  getExamUpdates(examType: string): Promise<ExamUpdate[]>;
+  getExamCriteria(examType: string): Promise<ExamCriteria | undefined>;
+  createExamUpdate(update: InsertExamUpdate): Promise<ExamUpdate>;
+  updateExamCriteria(criteria: InsertExamCriteria): Promise<ExamCriteria>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -391,6 +399,64 @@ export class DatabaseStorage implements IStorage {
       strongAreas,
       recentActivity
     };
+  }
+
+  // Exam Updates & Criteria
+  async getExamUpdates(examType: string): Promise<ExamUpdate[]> {
+    const updates = await db
+      .select()
+      .from(examUpdates)
+      .where(eq(examUpdates.examType, examType))
+      .orderBy(desc(examUpdates.publishedAt));
+    return updates;
+  }
+
+  async getExamCriteria(examType: string): Promise<ExamCriteria | undefined> {
+    const [criteria] = await db
+      .select()
+      .from(examCriteria)
+      .where(eq(examCriteria.examType, examType))
+      .orderBy(desc(examCriteria.lastUpdated))
+      .limit(1);
+    return criteria || undefined;
+  }
+
+  async createExamUpdate(update: InsertExamUpdate): Promise<ExamUpdate> {
+    const [newUpdate] = await db
+      .insert(examUpdates)
+      .values(update)
+      .returning();
+    return newUpdate;
+  }
+
+  async updateExamCriteria(criteriaData: InsertExamCriteria): Promise<ExamCriteria> {
+    const existing = await this.getExamCriteria(criteriaData.examType);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(examCriteria)
+        .set({
+          examType: criteriaData.examType,
+          pattern: criteriaData.pattern,
+          criteria: criteriaData.criteria,
+          syllabus: criteriaData.syllabus,
+          lastUpdated: new Date(),
+        })
+        .where(eq(examCriteria.id, existing.id))
+        .returning();
+      return updated;
+    }
+    
+    const [created] = await db
+      .insert(examCriteria)
+      .values({
+        examType: criteriaData.examType,
+        pattern: criteriaData.pattern,
+        criteria: criteriaData.criteria,
+        syllabus: criteriaData.syllabus,
+      })
+      .returning();
+    return created;
   }
 }
 

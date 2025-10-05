@@ -429,6 +429,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get exam updates by type (neet or jee)
+  app.get("/api/exam-updates/:examType", async (req: Request, res: Response) => {
+    try {
+      const { examType } = req.params;
+      if (examType !== 'neet' && examType !== 'jee') {
+        return res.status(400).json({ error: 'Invalid exam type' });
+      }
+      const updates = await storage.getExamUpdates(examType);
+      res.json(updates);
+    } catch (error) {
+      console.error('Get exam updates error:', error);
+      res.status(500).json({ error: 'Failed to get exam updates' });
+    }
+  });
+
+  // Get exam criteria by type (neet or jee)
+  app.get("/api/exam-criteria/:examType", async (req: Request, res: Response) => {
+    try {
+      const { examType } = req.params;
+      if (examType !== 'neet' && examType !== 'jee') {
+        return res.status(400).json({ error: 'Invalid exam type' });
+      }
+      const criteria = await storage.getExamCriteria(examType);
+      res.json(criteria);
+    } catch (error) {
+      console.error('Get exam criteria error:', error);
+      res.status(500).json({ error: 'Failed to get exam criteria' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
