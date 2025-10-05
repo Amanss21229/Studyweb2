@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, FileText, History, Bookmark, TrendingUp, Mail, Info, ScrollText, Shield, ShieldCheck, Scale } from "lucide-react";
+import { Bell, FileText, History, Bookmark, TrendingUp, Mail, Info, ScrollText, Shield, ShieldCheck, Scale, Key } from "lucide-react";
 import { Link } from "wouter";
 
 export function UpdatesSidebar() {
@@ -38,7 +38,8 @@ export function UpdatesSidebar() {
   const quickActions = [
     { name: 'View History', icon: History, color: 'text-primary', href: '/history' },
     { name: 'Saved Solutions', icon: Bookmark, color: 'text-accent', href: '/saved-solutions' },
-    { name: 'Progress', icon: TrendingUp, color: 'text-primary', href: '/progress' }
+    { name: 'Progress', icon: TrendingUp, color: 'text-primary', href: '/progress' },
+    { name: 'API Keys', icon: Key, color: 'text-golden', href: '/api-keys' }
   ];
 
   const policies = [

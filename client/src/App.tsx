@@ -24,6 +24,7 @@ import Solution from "@/pages/Solution";
 import History from "@/pages/History";
 import SavedSolutions from "@/pages/SavedSolutions";
 import Progress from "@/pages/Progress";
+import ApiKeys from "@/pages/ApiKeys";
 import NeetUpdates from "@/pages/NeetUpdates";
 import JeeUpdates from "@/pages/JeeUpdates";
 import NeetCriteria from "@/pages/NeetCriteria";
@@ -210,6 +211,7 @@ function Router() {
       <Route path="/history" component={History} />
       <Route path="/saved-solutions" component={SavedSolutions} />
       <Route path="/progress" component={Progress} />
+      <Route path="/api-keys" component={ApiKeys} />
       <Route path="/neet-updates" component={NeetUpdates} />
       <Route path="/jee-updates" component={JeeUpdates} />
       <Route path="/neet-criteria" component={NeetCriteria} />
