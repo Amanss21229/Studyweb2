@@ -24,6 +24,10 @@ import Solution from "@/pages/Solution";
 import History from "@/pages/History";
 import SavedSolutions from "@/pages/SavedSolutions";
 import Progress from "@/pages/Progress";
+import NeetUpdates from "@/pages/NeetUpdates";
+import JeeUpdates from "@/pages/JeeUpdates";
+import NeetCriteria from "@/pages/NeetCriteria";
+import JeeCriteria from "@/pages/JeeCriteria";
 import NotFound from "@/pages/not-found";
 
 function Header() {
@@ -200,6 +204,10 @@ function Router() {
       <Route path="/history" component={History} />
       <Route path="/saved-solutions" component={SavedSolutions} />
       <Route path="/progress" component={Progress} />
+      <Route path="/neet-updates" component={NeetUpdates} />
+      <Route path="/jee-updates" component={JeeUpdates} />
+      <Route path="/neet-criteria" component={NeetCriteria} />
+      <Route path="/jee-criteria" component={JeeCriteria} />
       <Route path="/solution/:shareUrl">
         {(params) => <Solution shareUrl={params.shareUrl} />}
       </Route>
