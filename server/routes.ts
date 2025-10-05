@@ -77,7 +77,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/keys', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const userEmail = req.user.claims.email;
       const { name } = req.body;
+      
+      // Only allow authorized admin email to create API keys
+      const AUTHORIZED_ADMIN_EMAIL = 'Amanss21229@gmail.com';
+      if (userEmail !== AUTHORIZED_ADMIN_EMAIL) {
+        return res.status(403).json({ 
+          error: 'Unauthorized',
+          message: 'API key creation is restricted to authorized administrators only. Please contact eduaman07@gmail.com for access.'
+        });
+      }
       
       if (!name || !name.trim()) {
         return res.status(400).json({ error: 'API key name is required' });

@@ -8,10 +8,6 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
-
 const getOidcConfig = memoize(
   async () => {
     return await client.discovery(
@@ -84,8 +80,11 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  const domains = process.env.REPLIT_DOMAINS 
+    ? process.env.REPLIT_DOMAINS.split(",")
+    : [process.env.APP_URL?.replace(/^https?:\/\//, '') || 'localhost:5000'];
+
+  for (const domain of domains) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -102,14 +101,20 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    const hostname = req.hostname;
+    const strategyName = `replitauth:${hostname}`;
+    
+    passport.authenticate(strategyName, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    const hostname = req.hostname;
+    const strategyName = `replitauth:${hostname}`;
+    
+    passport.authenticate(strategyName, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
