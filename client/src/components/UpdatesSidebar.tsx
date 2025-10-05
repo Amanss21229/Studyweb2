@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, FileText, History, Bookmark, TrendingUp } from "lucide-react";
+import { Bell, FileText, History, Bookmark, TrendingUp, Mail, Info, ScrollText, Shield, ShieldCheck, Scale } from "lucide-react";
 import { Link } from "wouter";
 
 export function UpdatesSidebar() {
@@ -39,6 +39,15 @@ export function UpdatesSidebar() {
     { name: 'View History', icon: History, color: 'text-primary', href: '/history' },
     { name: 'Saved Solutions', icon: Bookmark, color: 'text-accent', href: '/saved-solutions' },
     { name: 'Progress', icon: TrendingUp, color: 'text-primary', href: '/progress' }
+  ];
+
+  const policies = [
+    { name: 'Contact Us', icon: Mail, color: 'text-blue-500', href: '/contact-us' },
+    { name: 'About Us', icon: Info, color: 'text-green-500', href: '/about-us' },
+    { name: 'Terms of Use', icon: ScrollText, color: 'text-purple-500', href: '/terms-of-use' },
+    { name: 'Privacy Policy', icon: Shield, color: 'text-orange-500', href: '/privacy-policy' },
+    { name: 'Child Safety Policy', icon: ShieldCheck, color: 'text-pink-500', href: '/child-safety' },
+    { name: 'Grievance Redressal', icon: Scale, color: 'text-red-500', href: '/grievance-redressal' }
   ];
 
   return (
@@ -87,6 +96,30 @@ export function UpdatesSidebar() {
                   <Link href={action.href}>
                     <Icon className={`h-4 w-4 mr-3 ${action.color}`} />
                     <span>{action.name}</span>
+                  </Link>
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="border-t border-border pt-6 mt-6">
+          <h3 className="font-semibold text-sm mb-3 text-muted-foreground">Policies</h3>
+          <div className="space-y-2">
+            {policies.map((policy) => {
+              const Icon = policy.icon;
+              
+              return (
+                <Button
+                  key={policy.name}
+                  variant="ghost"
+                  className="w-full justify-start px-4 py-2 h-auto text-sm hover:bg-primary/10 transition-all"
+                  data-testid={`policy-${policy.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  asChild
+                >
+                  <Link href={policy.href}>
+                    <Icon className={`h-4 w-4 mr-3 ${policy.color}`} />
+                    <span>{policy.name}</span>
                   </Link>
                 </Button>
               );

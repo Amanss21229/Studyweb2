@@ -28,6 +28,12 @@ import NeetUpdates from "@/pages/NeetUpdates";
 import JeeUpdates from "@/pages/JeeUpdates";
 import NeetCriteria from "@/pages/NeetCriteria";
 import JeeCriteria from "@/pages/JeeCriteria";
+import ContactUs from "@/pages/ContactUs";
+import AboutUs from "@/pages/AboutUs";
+import TermsOfUse from "@/pages/TermsOfUse";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import ChildSafety from "@/pages/ChildSafety";
+import GrievanceRedressal from "@/pages/GrievanceRedressal";
 import NotFound from "@/pages/not-found";
 
 function Header() {
@@ -208,6 +214,12 @@ function Router() {
       <Route path="/jee-updates" component={JeeUpdates} />
       <Route path="/neet-criteria" component={NeetCriteria} />
       <Route path="/jee-criteria" component={JeeCriteria} />
+      <Route path="/contact-us" component={ContactUs} />
+      <Route path="/about-us" component={AboutUs} />
+      <Route path="/terms-of-use" component={TermsOfUse} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/child-safety" component={ChildSafety} />
+      <Route path="/grievance-redressal" component={GrievanceRedressal} />
       <Route path="/solution/:shareUrl">
         {(params) => <Solution shareUrl={params.shareUrl} />}
       </Route>
