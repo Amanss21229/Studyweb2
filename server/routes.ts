@@ -263,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Generate AI solution with user context
-      const aiResponse = await generateSolution(questionText, language, userName);
+      const aiResponse = await generateSolution(questionText, language, { userName });
       
       // Create solution with unique share URL
       const shareUrl = `${nanoid(12)}`;
@@ -339,7 +339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Generate AI solution with user context
-      const aiResponse = await generateSolution(extractedText, language, userName);
+      const aiResponse = await generateSolution(extractedText, language, { userName });
       
       // Create solution
       const shareUrl = `${nanoid(12)}`;
@@ -415,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Generate AI solution with optional user name
-      const aiResponse = await generateSolution(question, language, userName);
+      const aiResponse = await generateSolution(question, language, userName ? { userName } : undefined);
       
       // Create solution
       const shareUrl = `${nanoid(12)}`;
