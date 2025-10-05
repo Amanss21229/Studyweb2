@@ -16,6 +16,13 @@ export class AudioRecorder {
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
       this.recognition.maxAlternatives = 1;
+      
+      // Don't auto-stop on no speech - let user control it
+      // @ts-ignore - not all browsers support this
+      if (this.recognition.hasOwnProperty('continuous')) {
+        this.recognition.continuous = true;
+      }
+      
       console.log('Speech Recognition initialized successfully');
     } else {
       console.error('Speech Recognition not supported in this browser');
@@ -91,6 +98,16 @@ export class AudioRecorder {
         this.recognition.onend = () => {
           this.isRecognitionActive = false;
           console.log('🛑 Speech recognition ended');
+          
+          // If recognition ends but we're still recording and haven't stopped, restart it
+          if (!this.isStopping && this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+            console.log('🔄 Recognition ended early, restarting...');
+            try {
+              this.recognition.start();
+            } catch (error) {
+              console.warn('Could not restart recognition:', error);
+            }
+          }
         };
 
         this.recognition.onstart = () => {
