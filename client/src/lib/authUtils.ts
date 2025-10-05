@@ -3,7 +3,7 @@ export function isUnauthorizedError(error: Error): boolean {
 }
 
 export function redirectToLogin() {
-  window.location.href = "/api/login";
+  window.location.href = "/api/auth/google";
 }
 
 export function redirectToLogout() {

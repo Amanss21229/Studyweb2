@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 import { storage } from "./storage";
 import { generateSolution, generateConversationTitle } from "./services/openai";
 import { extractTextFromImage } from "./services/ocr";
-import { setupAuth, isAuthenticated, checkFreeUserLimit, requireAuthForPremiumFeatures } from "./replitAuth";
+import { setupAuth, isAuthenticated, checkFreeUserLimit, requireAuthForPremiumFeatures } from "./googleAuth";
 import { generateApiKey, hashApiKey, validateApiKey } from "./apiKeyAuth";
 import { 
   insertQuestionSchema, 
@@ -27,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -41,7 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/auth/complete-profile', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const profileData = completeProfileSchema.parse(req.body);
       
       const user = await storage.completeUserProfile(userId, profileData);
@@ -76,12 +76,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API Key Management Routes
   app.post('/api/keys', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const userEmail = req.user.claims.email;
+      const userId = req.user.id;
+      const userEmail = req.user.email?.toLowerCase();
       const { name } = req.body;
       
       // Only allow authorized admin email to create API keys
-      const AUTHORIZED_ADMIN_EMAIL = 'Amanss21229@gmail.com';
+      const AUTHORIZED_ADMIN_EMAIL = 'amanss21229@gmail.com';
       if (userEmail !== AUTHORIZED_ADMIN_EMAIL) {
         return res.status(403).json({ 
           error: 'Unauthorized',
@@ -119,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/keys', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const keys = await storage.getApiKeysByUser(userId);
       
       const sanitizedKeys = keys.map(k => ({
@@ -140,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/keys/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { id } = req.params;
       
       const keys = await storage.getApiKeysByUser(userId);
@@ -164,7 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { title } = req.body;
       
       // Use authenticated user ID if logged in, otherwise null for guest
-      const userId = req.isAuthenticated() ? req.user.claims.sub : null;
+      const userId = req.isAuthenticated() ? req.user.id : null;
       
       const conversation = await storage.createConversation({
         userId,
@@ -240,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user name for personalized conversation
       let userName: string | undefined;
       if (req.isAuthenticated()) {
-        const user = await storage.getUser(req.user.claims.sub);
+        const user = await storage.getUser(req.user.id);
         userName = user?.name || user?.firstName || undefined;
       } else if (req.session?.userName) {
         userName = req.session.userName;
@@ -326,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user name for personalized conversation
       let userName: string | undefined;
       if (req.isAuthenticated()) {
-        const user = await storage.getUser(req.user.claims.sub);
+        const user = await storage.getUser(req.user.id);
         userName = user?.name || user?.firstName || undefined;
       }
       
@@ -477,7 +477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's conversation history
   app.get("/api/history", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const history = await storage.getUserHistory(userId);
       res.json(history);
     } catch (error) {
@@ -489,7 +489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get bookmarked solutions
   app.get("/api/saved-solutions", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const bookmarked = await storage.getBookmarkedSolutions(userId);
       res.json(bookmarked);
     } catch (error) {
@@ -501,7 +501,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user progress analytics
   app.get("/api/progress", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const progress = await storage.getUserProgress(userId);
       res.json(progress);
     } catch (error) {

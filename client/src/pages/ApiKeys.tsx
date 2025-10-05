@@ -9,7 +9,7 @@ import { Copy, Trash2, Plus, Mail, Key, ExternalLink, AlertCircle } from 'lucide
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-const ADMIN_EMAIL = 'Amanss21229@gmail.com';
+const ADMIN_EMAIL = 'amanss21229@gmail.com';
 const CONTACT_EMAIL = 'eduaman07@gmail.com';
 
 export default function ApiKeys() {
