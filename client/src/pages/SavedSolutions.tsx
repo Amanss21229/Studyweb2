@@ -53,7 +53,7 @@ export default function SavedSolutions() {
             Please log in to view your saved solutions.
           </p>
           <Button asChild>
-            <a href="/api/login">Login with Replit</a>
+            <a href="/api/login">Login with Google</a>
           </Button>
         </Card>
       </div>

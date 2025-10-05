@@ -57,7 +57,7 @@ export default function History() {
             Please log in to view your conversation history.
           </p>
           <Button asChild>
-            <a href="/api/login">Login with Replit</a>
+            <a href="/api/login">Login with Google</a>
           </Button>
         </Card>
       </div>
