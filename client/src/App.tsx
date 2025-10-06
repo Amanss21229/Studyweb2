@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -236,6 +237,7 @@ function App() {
       <ThemeProvider>
         <LanguageProvider>
           <TooltipProvider>
+            <LogoutHandler />
             <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
               <Header />
               <Router />
@@ -246,6 +248,21 @@ function App() {
       </ThemeProvider>
     </QueryClientProvider>
   );
+}
+
+function LogoutHandler() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('logout') === 'success') {
+      queryClient.clear();
+      queryClient.invalidateQueries();
+      const url = new URL(window.location.href);
+      url.searchParams.delete('logout');
+      window.history.replaceState({}, '', url.pathname);
+    }
+  }, []);
+  
+  return null;
 }
 
 export default App;

@@ -7,5 +7,7 @@ export function redirectToLogin() {
 }
 
 export function redirectToLogout() {
+  localStorage.clear();
+  sessionStorage.clear();
   window.location.href = "/api/logout";
 }
