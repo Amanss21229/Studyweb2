@@ -1,8 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Keyboard, 
   Image, 
@@ -15,7 +17,9 @@ import {
   PenTool,
   MicIcon,
   Square,
-  Lock
+  Lock,
+  Eraser,
+  Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AudioRecorder } from "@/lib/audio";
@@ -40,12 +44,56 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
   const [isRecording, setIsRecording] = useState(false);
   const [recordingStatus, setRecordingStatus] = useState('Click microphone to start recording');
   const [showWaveform, setShowWaveform] = useState(false);
+  const [isEquationPopoverOpen, setIsEquationPopoverOpen] = useState(false);
+  const [isDiagramDialogOpen, setIsDiagramDialogOpen] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const { language } = useLanguage();
   const { isAuthenticated } = useAuth();
+
+  const mathSymbols = [
+    { symbol: '√', label: 'Square root', value: '√' },
+    { symbol: '∛', label: 'Cube root', value: '∛' },
+    { symbol: '∫', label: 'Integral', value: '∫' },
+    { symbol: '∑', label: 'Summation', value: '∑' },
+    { symbol: 'π', label: 'Pi', value: 'π' },
+    { symbol: '∞', label: 'Infinity', value: '∞' },
+    { symbol: '≈', label: 'Approximately', value: '≈' },
+    { symbol: '≠', label: 'Not equal', value: '≠' },
+    { symbol: '≤', label: 'Less than or equal', value: '≤' },
+    { symbol: '≥', label: 'Greater than or equal', value: '≥' },
+    { symbol: '°', label: 'Degree', value: '°' },
+    { symbol: 'α', label: 'Alpha', value: 'α' },
+    { symbol: 'β', label: 'Beta', value: 'β' },
+    { symbol: 'γ', label: 'Gamma', value: 'γ' },
+    { symbol: 'θ', label: 'Theta', value: 'θ' },
+    { symbol: 'λ', label: 'Lambda', value: 'λ' },
+    { symbol: 'Δ', label: 'Delta', value: 'Δ' },
+    { symbol: '×', label: 'Multiply', value: '×' },
+    { symbol: '÷', label: 'Divide', value: '÷' },
+    { symbol: '±', label: 'Plus-minus', value: '±' },
+    { symbol: '²', label: 'Squared', value: '²' },
+    { symbol: '³', label: 'Cubed', value: '³' },
+    { symbol: '⁴', label: 'Power 4', value: '⁴' },
+    { symbol: '½', label: 'One half', value: '½' },
+    { symbol: '⅓', label: 'One third', value: '⅓' },
+    { symbol: '¼', label: 'One quarter', value: '¼' },
+    { symbol: '∂', label: 'Partial derivative', value: '∂' },
+    { symbol: '∇', label: 'Nabla', value: '∇' },
+    { symbol: '∈', label: 'Element of', value: '∈' },
+    { symbol: '∉', label: 'Not element of', value: '∉' },
+    { symbol: '⊂', label: 'Subset', value: '⊂' },
+    { symbol: '⊆', label: 'Subset or equal', value: '⊆' },
+    { symbol: '∪', label: 'Union', value: '∪' },
+    { symbol: '∩', label: 'Intersection', value: '∩' },
+    { symbol: '→', label: 'Arrow right', value: '→' },
+    { symbol: '←', label: 'Arrow left', value: '←' },
+  ];
 
   const handlePremiumFeatureClick = (feature: 'image' | 'audio') => {
     if (!isAuthenticated) {
@@ -58,6 +106,110 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
       return false;
     }
     return true;
+  };
+
+  const insertMathSymbol = (symbol: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newText = textInput.substring(0, start) + symbol + textInput.substring(end);
+    
+    setTextInput(newText);
+    setIsEquationPopoverOpen(false);
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + symbol.length, start + symbol.length);
+    }, 0);
+
+    toast({
+      title: "Symbol inserted",
+      description: `Added ${symbol} to your text`,
+    });
+  };
+
+  const initializeCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  };
+
+  useEffect(() => {
+    if (isDiagramDialogOpen && canvasRef.current) {
+      initializeCanvas();
+    }
+  }, [isDiagramDialogOpen]);
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    setIsDrawing(true);
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearCanvas = () => {
+    initializeCanvas();
+  };
+
+  const saveDiagram = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+
+      const file = new File([blob], 'diagram.png', { type: 'image/png' });
+      
+      toast({
+        title: "Diagram saved",
+        description: "Your diagram has been added as an image",
+      });
+
+      setIsDiagramDialogOpen(false);
+      setInputMode('image');
+      setSelectedImage(file);
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleTextSubmit = () => {
@@ -236,6 +388,7 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
               <div className="flex items-end space-x-2">
                 <div className="flex-1">
                   <Textarea
+                    ref={textareaRef}
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
                     rows={3}
@@ -253,19 +406,47 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
                   />
                   <div className="flex items-center justify-between mt-2 px-1">
                     <div className="flex items-center space-x-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground hover:text-primary btn-icon p-1"
-                        title="Add equation"
-                      >
-                        <SquareRadical className="h-4 w-4" />
-                      </Button>
+                      <Popover open={isEquationPopoverOpen} onOpenChange={setIsEquationPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-primary btn-icon p-1"
+                            title="Add equation"
+                            data-testid="equation-button"
+                          >
+                            <SquareRadical className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80" data-testid="equation-popover">
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm">Math Symbols</h4>
+                            <p className="text-xs text-muted-foreground">Click a symbol to insert it</p>
+                            <div className="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto">
+                              {mathSymbols.map((item) => (
+                                <Button
+                                  key={item.value}
+                                  variant="outline"
+                                  className="h-10 text-lg hover:bg-primary hover:text-primary-foreground"
+                                  onClick={() => insertMathSymbol(item.symbol)}
+                                  title={item.label}
+                                  data-testid={`math-symbol-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                                >
+                                  {item.symbol}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      
                       <Button
                         variant="ghost"
                         size="sm"
                         className="text-muted-foreground hover:text-primary btn-icon p-1"
                         title="Add diagram"
+                        onClick={() => setIsDiagramDialogOpen(true)}
+                        data-testid="diagram-button"
                       >
                         <PenTool className="h-4 w-4" />
                       </Button>
@@ -392,6 +573,59 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
           </div>
         </CardContent>
       </Card>
+
+      {/* Diagram Drawing Dialog */}
+      <Dialog open={isDiagramDialogOpen} onOpenChange={setIsDiagramDialogOpen}>
+        <DialogContent className="max-w-2xl" data-testid="diagram-dialog">
+          <DialogHeader>
+            <DialogTitle>Draw Your Diagram</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-border rounded-lg overflow-hidden bg-white">
+              <canvas
+                ref={canvasRef}
+                width={600}
+                height={400}
+                className="cursor-crosshair w-full"
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                data-testid="drawing-canvas"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={clearCanvas}
+                data-testid="clear-canvas-button"
+              >
+                <Eraser className="h-4 w-4 mr-2" />
+                Clear Canvas
+              </Button>
+              <div className="text-xs text-muted-foreground">
+                Click and drag to draw
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDiagramDialogOpen(false)}
+              data-testid="cancel-diagram-button"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveDiagram}
+              data-testid="save-diagram-button"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Save Diagram
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
