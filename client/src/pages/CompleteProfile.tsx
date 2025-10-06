@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { completeProfileSchema, type CompleteProfile } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ import { GraduationCap } from "lucide-react";
 export default function CompleteProfile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   const form = useForm<CompleteProfile>({
     resolver: zodResolver(completeProfileSchema),
@@ -44,12 +46,17 @@ export default function CompleteProfile() {
     mutationFn: async (data: CompleteProfile) => {
       await apiRequest("POST", "/api/auth/complete-profile", data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
       toast({
         title: "Profile completed!",
-        description: "Welcome to NEET JEE AI Tutor",
+        description: "Welcome to AimAi - Your AI Tutor for NEET & JEE",
       });
+      
+      setTimeout(() => {
+        setLocation("/");
+      }, 500);
     },
     onError: (error: Error) => {
       toast({
