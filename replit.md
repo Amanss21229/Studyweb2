@@ -68,6 +68,8 @@ npm start
 ### Features
 
 - **Text Input**: Free for all users (120 minutes daily limit for guests)
+  - **Math Symbol Insertion**: Popover with 36+ mathematical symbols (√, π, θ, ∫, etc.) for easy equation writing
+  - **Diagram Drawing**: Canvas-based drawing tool to create diagrams (requires login, saves as image)
 - **Image Upload**: Requires login (uses OCR to extract questions from images)
 - **Voice Input**: Requires login (converts speech to text for questions)
 - **Multi-language Support**: English, Hindi, Hinglish, Bengali
