@@ -14,6 +14,8 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  const isSecure = process.env.NODE_ENV === 'production' || !!process.env.REPLIT_DOMAINS;
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
@@ -21,7 +23,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecure,
       maxAge: sessionTtl,
     },
   });
@@ -54,9 +56,16 @@ export async function setupAuth(app: Express) {
   }
 
   // Determine callback URL based on environment
-  const callbackURL = process.env.NODE_ENV === 'production'
-    ? `${process.env.APP_URL}/api/auth/google/callback`
-    : 'http://localhost:5000/api/auth/google/callback';
+  const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS;
+  const callbackURL = replitDomain
+    ? `https://${replitDomain}/api/auth/google/callback`
+    : (process.env.NODE_ENV === 'production'
+      ? `${process.env.APP_URL}/api/auth/google/callback`
+      : 'http://localhost:5000/api/auth/google/callback');
+
+  console.log('✓ Google OAuth configured with callback URL:', callbackURL);
+  console.log('  Make sure this URL is added to Google Cloud Console:');
+  console.log('  https://console.cloud.google.com/apis/credentials');
 
   passport.use(
     new GoogleStrategy(
