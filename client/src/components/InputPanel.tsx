@@ -187,6 +187,11 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
   };
 
   const saveDiagram = () => {
+    if (!handlePremiumFeatureClick('image')) {
+      setIsDiagramDialogOpen(false);
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -580,6 +585,14 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
           <DialogHeader>
             <DialogTitle>Draw Your Diagram</DialogTitle>
           </DialogHeader>
+          {!isAuthenticated && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 flex items-start space-x-2">
+              <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-yellow-800 dark:text-yellow-300">
+                <strong>Login required:</strong> You'll need to log in to save and use your diagram. You can still draw to preview how it works!
+              </p>
+            </div>
+          )}
           <div className="space-y-4">
             <div className="border-2 border-border rounded-lg overflow-hidden bg-white">
               <canvas
