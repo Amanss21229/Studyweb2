@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChatInterface } from "@/components/ChatInterface";
-import { UpdatesSidebar } from "@/components/UpdatesSidebar";
+import { HamburgerMenu } from "@/components/HamburgerMenu";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -9,17 +9,13 @@ export default function Home() {
 
   return (
     <main className="container mx-auto px-4 py-6 max-w-7xl" data-testid="home-page">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Sidebar */}
-        <aside className="lg:col-span-3">
-          <UpdatesSidebar />
-        </aside>
+      {/* Hamburger Menu */}
+      <HamburgerMenu />
 
-        {/* Chat Interface */}
-        <section className="lg:col-span-9">
-          <ChatInterface selectedSubject={selectedSubject} />
-        </section>
-      </div>
+      {/* Chat Interface - Full Width */}
+      <section className="w-full">
+        <ChatInterface selectedSubject={selectedSubject} />
+      </section>
 
       {/* Floating Action Button (Mobile) */}
       <Button 
