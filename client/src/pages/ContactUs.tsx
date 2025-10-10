@@ -1,9 +1,17 @@
 import { Link } from "wouter";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { ArrowLeft, Mail, MapPin, Phone, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function ContactUs() {
+  usePageMeta(
+    "Contact AimAi — Get Support",
+    "Contact AimAi for support, feedback or partnership. We help aspirants with AI-powered study assistance and quiz support.",
+    "https://aimai.onrender.com/contact-us",
+    "https://aimai.onrender.com/og-image.png"
+  );
+  
   return (
     <div className="min-h-screen bg-background" data-testid="contact-us-page">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
