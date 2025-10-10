@@ -44,6 +44,8 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
   const [isEquationPopoverOpen, setIsEquationPopoverOpen] = useState(false);
   const [isDiagramDialogOpen, setIsDiagramDialogOpen] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [selectedColor, setSelectedColor] = useState('#000000');
+  const [brushSize, setBrushSize] = useState(2);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRecorderRef = useRef<AudioRecorder | null>(null);
@@ -123,8 +125,8 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
 
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = selectedColor;
+    ctx.lineWidth = brushSize;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
   };
@@ -135,17 +137,43 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
     }
   }, [isDiagramDialogOpen]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.strokeStyle = selectedColor;
+    ctx.lineWidth = brushSize;
+  }, [selectedColor, brushSize]);
+
+  const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  };
+
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const { x, y } = getCanvasCoordinates(e);
+
     setIsDrawing(true);
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.moveTo(x, y);
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -154,11 +182,12 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    const { x, y } = getCanvasCoordinates(e);
+
+    ctx.lineTo(x, y);
     ctx.stroke();
   };
 
@@ -566,6 +595,65 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
                 data-testid="drawing-canvas"
               />
             </div>
+            
+            {/* Color Picker and Brush Size */}
+            <div className="flex items-center justify-between gap-4 p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">Color:</span>
+                <div className="flex gap-2">
+                  {[
+                    { color: '#000000', label: 'Black' },
+                    { color: '#EF4444', label: 'Red' },
+                    { color: '#3B82F6', label: 'Blue' },
+                    { color: '#10B981', label: 'Green' },
+                    { color: '#F59E0B', label: 'Orange' },
+                    { color: '#8B5CF6', label: 'Purple' },
+                    { color: '#EC4899', label: 'Pink' },
+                    { color: '#6B7280', label: 'Gray' },
+                  ].map(({ color, label }) => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        selectedColor === color 
+                          ? 'border-primary scale-110' 
+                          : 'border-border hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      title={label}
+                      data-testid={`color-${label.toLowerCase()}`}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">Size:</span>
+                <div className="flex gap-2">
+                  {[
+                    { size: 1, label: 'Thin' },
+                    { size: 2, label: 'Normal' },
+                    { size: 4, label: 'Thick' },
+                    { size: 6, label: 'Bold' },
+                  ].map(({ size, label }) => (
+                    <button
+                      key={size}
+                      onClick={() => setBrushSize(size)}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                        brushSize === size
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background border border-border hover:bg-muted'
+                      }`}
+                      title={label}
+                      data-testid={`brush-${label.toLowerCase()}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
             <div className="flex items-center justify-between">
               <Button
                 variant="outline"
