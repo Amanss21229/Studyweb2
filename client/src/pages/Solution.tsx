@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { getSolution } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import usePageMeta from "@/lib/usePageMeta";
 
 interface SolutionPageProps {
   shareUrl: string;
@@ -94,6 +95,12 @@ export default function Solution({ shareUrl }: SolutionPageProps) {
 
   const { solution, question } = data;
 
+    // ✅ Dynamic SEO meta tags
+  usePageMeta(
+    `${question.questionText?.slice(0, 60)} | NEET & JEE Solution by AimAi`,
+    `Get detailed AI-generated explanation for "${question.questionText}" covering ${solution.subject || 'subject'} and ${solution.topic || 'topic'} for NEET, JEE & NCERT exams.`
+  );
+  
   return (
     <div className="min-h-screen bg-background" data-testid="solution-page">
       {/* Header */}
