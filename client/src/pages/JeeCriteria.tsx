@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, BookOpen, FileText, GraduationCap } from "lucide-react";
@@ -21,6 +22,13 @@ export default function JeeCriteria() {
       </div>
     );
   }
+
+  usePageMeta(
+    "JEE Eligibility & Criteria",
+    "Detailed JEE eligibility criteria, important guidelines and preparation pointers — from AimAi.",
+    "https://aimai.onrender.com/jee-criteria",
+    "https://aimai.onrender.com/og-image.png"
+  );
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-5xl" data-testid="jee-criteria-page">
