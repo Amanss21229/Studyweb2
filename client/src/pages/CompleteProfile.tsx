@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -70,6 +71,13 @@ export default function CompleteProfile() {
   const onSubmit = (data: CompleteProfile) => {
     completeProfileMutation.mutate(data);
   };
+
+  usePageMeta(
+    "Complete Your Profile — AimAi",
+    "Complete your AimAi profile to personalize quizzes and recommendations.",
+    "https://aimai.onrender.com/complete-profile",
+    "https://aimai.onrender.com/og-image.png"
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
