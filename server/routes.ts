@@ -174,8 +174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageUrl: '', // In production, save to cloud storage
       });
       
-      // Generate AI solution with user context
-      const aiResponse = await generateSolution(extractedText, language, { userName });
+      // Generate AI solution
+      const aiResponse = await generateSolution(extractedText, language);
       
       // Create solution
       const shareUrl = `${nanoid(12)}`;

@@ -17,15 +17,12 @@ import {
   PenTool,
   MicIcon,
   Square,
-  Lock,
   Eraser,
   Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AudioRecorder } from "@/lib/audio";
 import { useLanguage } from "./LanguageProvider";
-import { useAuth } from "@/hooks/useAuth";
-import { redirectToLogin } from "@/lib/authUtils";
 
 type InputMode = 'text' | 'image' | 'audio';
 
@@ -54,7 +51,6 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const { language } = useLanguage();
-  const { isAuthenticated } = useAuth();
 
   const mathSymbols = [
     { symbol: '√', label: 'Square root', value: '√' },
@@ -95,18 +91,6 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
     { symbol: '←', label: 'Arrow left', value: '←' },
   ];
 
-  const handlePremiumFeatureClick = (feature: 'image' | 'audio') => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Login Required",
-        description: `${feature === 'image' ? 'Image upload' : 'Voice input'} requires login. Please login to continue.`,
-        variant: "destructive",
-      });
-      setTimeout(() => redirectToLogin(), 1500);
-      return false;
-    }
-    return true;
-  };
 
   const insertMathSymbol = (symbol: string) => {
     const textarea = textareaRef.current;
@@ -187,11 +171,6 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
   };
 
   const saveDiagram = () => {
-    if (!handlePremiumFeatureClick('image')) {
-      setIsDiagramDialogOpen(false);
-      return;
-    }
-
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -359,29 +338,17 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
             {inputModes.map((mode) => {
               const Icon = mode.icon;
               const isActive = inputMode === mode.id;
-              const isPremium = mode.id === 'image' || mode.id === 'audio';
-              const isLocked = isPremium && !isAuthenticated;
               
               return (
                 <Button
                   key={mode.id}
                   variant={isActive ? "default" : "ghost"}
-                  className={`flex items-center space-x-2 px-4 py-2 whitespace-nowrap ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'} ${isLocked ? 'opacity-70' : ''}`}
-                  onClick={() => {
-                    if (isPremium && !handlePremiumFeatureClick(mode.id)) {
-                      return;
-                    }
-                    setInputMode(mode.id);
-                  }}
+                  className={`flex items-center space-x-2 px-4 py-2 whitespace-nowrap ${isActive ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                  onClick={() => setInputMode(mode.id)}
                   data-testid={`input-mode-${mode.id}`}
                 >
-                  {isLocked ? (
-                    <Lock className="h-3 w-3 mr-1" />
-                  ) : (
-                    <Icon className="h-4 w-4" />
-                  )}
+                  <Icon className="h-4 w-4" />
                   <span className="text-sm font-medium">{mode.name}</span>
-                  {isLocked && <span className="text-xs ml-1">(Login)</span>}
                 </Button>
               );
             })}
@@ -585,14 +552,6 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
           <DialogHeader>
             <DialogTitle>Draw Your Diagram</DialogTitle>
           </DialogHeader>
-          {!isAuthenticated && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 flex items-start space-x-2">
-              <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-yellow-800 dark:text-yellow-300">
-                <strong>Login required:</strong> You'll need to log in to save and use your diagram. You can still draw to preview how it works!
-              </p>
-            </div>
-          )}
           <div className="space-y-4">
             <div className="border-2 border-border rounded-lg overflow-hidden bg-white">
               <canvas
