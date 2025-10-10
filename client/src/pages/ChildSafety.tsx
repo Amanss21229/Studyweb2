@@ -1,10 +1,18 @@
 import { Link } from "wouter";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { ArrowLeft, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ChildSafety() {
+  usePageMeta(
+    "Child Safety — AimAi",
+    "AimAi's child safety & content guidelines for a secure learning environment.",
+    "https://aimai.onrender.com/child-safety",
+    "https://aimai.onrender.com/og-image.png"
+  );
+  
   return (
     <div className="min-h-screen bg-background" data-testid="child-safety-page">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
