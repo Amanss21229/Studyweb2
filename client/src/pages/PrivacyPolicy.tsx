@@ -1,9 +1,17 @@
 import { Link } from "wouter";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { ArrowLeft, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function PrivacyPolicy() {
+  usePageMeta(
+    "AimAi — Privacy Policy",
+    "Read AimAi's privacy policy about data usage, storage and user privacy for the AI tutor platform.",
+    "https://aimai.onrender.com/privacy-policy",
+    "https://aimai.onrender.com/og-image.png"
+  );
+  
   return (
     <div className="min-h-screen bg-background" data-testid="privacy-policy-page">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
