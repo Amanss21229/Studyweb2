@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -13,14 +12,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Languages, Moon, Sun, User, LogOut } from "lucide-react";
+import { Languages, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useLanguage } from "@/components/LanguageProvider";
-import { useAuth } from "@/hooks/useAuth";
-import { redirectToLogin, redirectToLogout } from "@/lib/authUtils";
 import logoImage from "@assets/IMG_20250913_000900_129_1759602426440.jpg";
 import Home from "@/pages/Home";
-import CompleteProfile from "@/pages/CompleteProfile";
 import Solution from "@/pages/Solution";
 import History from "@/pages/History";
 import SavedSolutions from "@/pages/SavedSolutions";
@@ -41,7 +37,6 @@ import NotFound from "@/pages/not-found";
 function Header() {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, getLanguageDisplay } = useLanguage();
-  const { user, isAuthenticated, isLoading } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 dark:bg-card/90">
@@ -129,57 +124,6 @@ function Header() {
                 <Moon className="h-4 w-4 text-primary" />
               )}
             </Button>
-
-            {/* User Profile / Login */}
-            {!isLoading && (
-              <>
-                {isAuthenticated && user ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        className="flex items-center space-x-2 hover:bg-primary/10"
-                        data-testid="user-menu"
-                      >
-                        {user.profileImageUrl ? (
-                          <img 
-                            src={user.profileImageUrl} 
-                            alt={user.name || "User"} 
-                            className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full premium-gradient flex items-center justify-center">
-                            <User className="h-4 w-4 text-white" />
-                          </div>
-                        )}
-                        <span className="text-sm font-medium hidden md:inline">
-                          {user.name || user.firstName || "Student"}
-                        </span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem 
-                        onClick={redirectToLogout}
-                        className="text-destructive"
-                        data-testid="logout-button"
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <Button 
-                    onClick={redirectToLogin}
-                    className="premium-gradient text-white hover:opacity-90 font-semibold shadow-lg"
-                    size="sm"
-                    data-testid="login-button"
-                  >
-                    Login with Google
-                  </Button>
-                )}
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -188,24 +132,6 @@ function Header() {
 }
 
 function Router() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If authenticated but profile not complete, show Complete Profile page
-  if (isAuthenticated && user && !user.isProfileComplete) {
-    return <CompleteProfile />;
-  }
-
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -237,7 +163,6 @@ function App() {
       <ThemeProvider>
         <LanguageProvider>
           <TooltipProvider>
-            <LogoutHandler />
             <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
               <Header />
               <Router />
@@ -248,21 +173,6 @@ function App() {
       </ThemeProvider>
     </QueryClientProvider>
   );
-}
-
-function LogoutHandler() {
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('logout') === 'success') {
-      queryClient.clear();
-      queryClient.invalidateQueries();
-      const url = new URL(window.location.href);
-      url.searchParams.delete('logout');
-      window.history.replaceState({}, '', url.pathname);
-    }
-  }, []);
-  
-  return null;
 }
 
 export default App;
