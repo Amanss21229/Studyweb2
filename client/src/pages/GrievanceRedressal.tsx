@@ -1,9 +1,17 @@
 import { Link } from "wouter";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { ArrowLeft, Scale, Clock, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function GrievanceRedressal() {
+  usePageMeta(
+    "Grievance Redressal — AimAi",
+    "Grievance and reporting process for AimAi users — how to get help and report issues.",
+    "https://aimai.onrender.com/grievance-redressal",
+    "https://aimai.onrender.com/og-image.png"
+  );
+  
   return (
     <div className="min-h-screen bg-background" data-testid="grievance-redressal-page">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
