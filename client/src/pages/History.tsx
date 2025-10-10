@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { Link } from "wouter";
 import { ArrowLeft, Calendar, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,13 @@ export default function History() {
 
   const groupedHistory = groupByDate(history);
 
+  usePageMeta(
+    "History — AimAi",
+    "Your activity history — past quizzes, attempts and results on AimAi.",
+    "https://aimai.onrender.com/history",
+    "https://aimai.onrender.com/og-image.png"
+  );
+  
   return (
     <div className="min-h-screen bg-background" data-testid="history-page">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
