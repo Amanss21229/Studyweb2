@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { getSolution } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import usePageMeta from "@/lib/usePageMeta"; // ✅ Added for SEO
+import { usePageMeta } from "@/lib/usePageMeta"; // ✅ Added for SEO
 
 interface SolutionPageProps {
   shareUrl: string;
