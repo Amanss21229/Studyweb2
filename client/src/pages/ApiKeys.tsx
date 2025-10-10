@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePageMeta } from "@/lib/usePageMeta";
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
@@ -102,7 +103,13 @@ export default function ApiKeys() {
   };
 
   const apiUrl = window.location.origin + '/api/solution';
-
+  usePageMeta(
+  "API Keys — AimAi",
+  "Manage API keys and integrations for AimAi features.",
+  "https://aimai.onrender.com/api-keys",
+  "https://aimai.onrender.com/og-image.png"
+);
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
