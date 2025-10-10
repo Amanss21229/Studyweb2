@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AboutUs() {
-
   usePageMeta(
     "About AimAi — Mission & Team",
     "Learn about AimAi — our mission to help NEET & JEE students with AI-based practice tests, step-by-step solutions and study analytics.",
