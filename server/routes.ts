@@ -385,6 +385,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API Keys Management - Available to everyone
+  app.get("/api/keys", async (req: Request, res: Response) => {
+    try {
+      const keys = await storage.getAllApiKeys();
+      res.json(keys);
+    } catch (error) {
+      console.error('Get API keys error:', error);
+      res.status(500).json({ error: 'Failed to get API keys' });
+    }
+  });
+
+  app.post("/api/keys", async (req: Request, res: Response) => {
+    try {
+      const { name } = req.body;
+      if (!name?.trim()) {
+        return res.status(400).json({ error: 'Key name is required' });
+      }
+      
+      const apiKey = generateApiKey();
+      const hashedKey = hashApiKey(apiKey);
+      
+      const newKey = await storage.createApiKey({
+        name: name.trim(),
+        key: hashedKey,
+      });
+      
+      res.json({ ...newKey, key: apiKey });
+    } catch (error) {
+      console.error('Create API key error:', error);
+      res.status(500).json({ error: 'Failed to create API key' });
+    }
+  });
+
+  app.delete("/api/keys/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteApiKey(id);
+      res.json({ message: 'API key revoked successfully' });
+    } catch (error) {
+      console.error('Delete API key error:', error);
+      res.status(500).json({ error: 'Failed to revoke API key' });
+    }
+  });
+
+  // Get current user info
+  app.get("/api/auth/user", async (req: any, res: Response) => {
+    try {
+      if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+        return res.json(req.user);
+      }
+      res.status(401).json({ message: 'Not authenticated' });
+    } catch (error) {
+      console.error('Get user error:', error);
+      res.status(500).json({ error: 'Failed to get user info' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

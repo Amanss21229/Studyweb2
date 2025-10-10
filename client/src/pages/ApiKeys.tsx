@@ -18,13 +18,8 @@ export default function ApiKeys() {
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const { data: user } = useQuery<any>({
-    queryKey: ['/api/auth/user'],
-  });
-
   const { data: apiKeys = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/keys'],
-    enabled: user?.email === ADMIN_EMAIL,
   });
 
   const createMutation = useMutation({
@@ -107,92 +102,6 @@ export default function ApiKeys() {
   };
 
   const apiUrl = window.location.origin + '/api/solution';
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4">
-        <Card className="max-w-md w-full bg-gray-900/50 border-golden-dark">
-          <CardHeader>
-            <CardTitle className="text-golden flex items-center gap-2">
-              <Key className="w-5 h-5" />
-              Login Required
-            </CardTitle>
-            <CardDescription className="text-gray-400">
-              Please login to access API key management
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
-  if (user.email !== ADMIN_EMAIL) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4">
-        <Card className="max-w-2xl w-full bg-gray-900/50 border-golden-dark">
-          <CardHeader>
-            <CardTitle className="text-golden flex items-center gap-2">
-              <AlertCircle className="w-6 h-6" />
-              Access Restricted
-            </CardTitle>
-            <CardDescription className="text-gray-400">
-              API Key creation is only available for authorized administrators
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <Alert className="bg-gray-800/50 border-golden-dark">
-              <Mail className="h-4 w-4 text-golden" />
-              <AlertDescription className="text-gray-300 ml-2">
-                If you need an API key for integration purposes, please contact the administrator
-              </AlertDescription>
-            </Alert>
-
-            <div className="bg-gray-800/30 rounded-lg p-6 space-y-4 border border-gray-700">
-              <h3 className="font-semibold text-white flex items-center gap-2">
-                <Mail className="w-5 h-5 text-golden" />
-                Request API Access
-              </h3>
-              <p className="text-gray-400 text-sm">
-                To request an API key for Telegram bot integration or other purposes, please send an email with:
-              </p>
-              <ul className="list-disc list-inside text-gray-400 text-sm space-y-1 ml-2">
-                <li>Your name and organization</li>
-                <li>Purpose of API usage</li>
-                <li>Expected request volume</li>
-              </ul>
-              <Button 
-                className="w-full bg-golden hover:bg-golden-light text-black font-semibold"
-                onClick={() => window.location.href = `mailto:${CONTACT_EMAIL}?subject=API Key Request - AimAI&body=Hello,%0A%0AI would like to request an API key for:%0A%0AName:%0APurpose:%0AExpected Usage:%0A%0AThank you!`}
-                data-testid="button-contact-admin"
-              >
-                <Mail className="w-4 h-4 mr-2" />
-                Contact Administrator
-              </Button>
-              <p className="text-center text-gray-500 text-sm">
-                Email: <span className="text-golden font-medium">{CONTACT_EMAIL}</span>
-              </p>
-            </div>
-
-            <div className="bg-gray-800/30 rounded-lg p-6 border border-gray-700">
-              <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                <ExternalLink className="w-5 h-5 text-golden" />
-                API Endpoint Information
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-gray-900/50 rounded">
-                  <span className="text-gray-400 text-sm">API URL:</span>
-                  <code className="text-golden text-sm bg-gray-800 px-2 py-1 rounded">{apiUrl}</code>
-                </div>
-                <p className="text-gray-500 text-xs mt-2">
-                  * This URL requires a valid API key in the X-API-Key header
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4 md:p-8">
