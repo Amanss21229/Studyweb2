@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { Link } from "wouter";
 import { ArrowLeft, TrendingUp, TrendingDown, BookOpen, Target, Activity, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,14 @@ export default function Progress() {
 
   const totalSubjects = Object.keys(progress?.subjectBreakdown || {}).length;
   const maxQuestions = Math.max(...Object.values(progress?.subjectBreakdown || {}).map(s => s.count), 1);
-
+  
+  usePageMeta(
+    "My Progress — AimAi",
+    "Track your NEET / JEE preparation progress, performance analytics and improvement suggestions on AimAi.",
+    "https://aimai.onrender.com/progress",
+    "https://aimai.onrender.com/og-image.png"
+  );
+  
   return (
     <div className="min-h-screen bg-background" data-testid="progress-page">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
