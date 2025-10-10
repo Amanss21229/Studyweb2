@@ -1,10 +1,18 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Home } from "lucide-react";
 import { Link } from "wouter";
 import logoImage from "@assets/IMG_20250913_000900_129_1759602426440.jpg";
 
 export default function NotFound() {
+  usePageMeta(
+    "Page Not Found — AimAi",
+    "The page you were looking for could not be found. Go back to AimAi home for NEET & JEE practice.",
+    "https://aimai.onrender.com/",
+    "https://aimai.onrender.com/og-image.png"
+  );
+  
   return (
     <div className="min-h-screen w-full flex items-center justify-center">
       <Card className="w-full max-w-md mx-4 card-elevated premium-border">
