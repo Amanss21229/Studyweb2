@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { Link } from "wouter";
 import { ArrowLeft, Bookmark, Calendar, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,13 @@ export default function SavedSolutions() {
       console.error('Failed to copy:', error);
     }
   };
+
+  usePageMeta(
+    "Saved Solutions — AimAi",
+    "Your saved question solutions, notes and study resources on AimAi. Revisit solved problems anytime.",
+    "https://aimai.onrender.com/saved-solutions",
+    "https://aimai.onrender.com/og-image.png"
+  );
 
   return (
     <div className="min-h-screen bg-background" data-testid="saved-solutions-page">
