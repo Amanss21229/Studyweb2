@@ -5,7 +5,6 @@ import { nanoid } from "nanoid";
 import { storage } from "./storage";
 import { generateSolution, generateConversationTitle } from "./services/openai";
 import { extractTextFromImage } from "./services/ocr";
-import { setupAuth, isAuthenticated, checkFreeUserLimit, requireAuthForPremiumFeatures } from "./googleAuth";
 import { generateApiKey, hashApiKey, validateApiKey } from "./apiKeyAuth";
 import { 
   insertQuestionSchema, 
@@ -21,153 +20,13 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Setup authentication
-  await setupAuth(app);
-
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
-
-  app.post('/api/auth/complete-profile', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const profileData = completeProfileSchema.parse(req.body);
-      
-      const user = await storage.completeUserProfile(userId, profileData);
-      res.json(user);
-    } catch (error) {
-      console.error("Error completing profile:", error);
-      res.status(500).json({ message: "Failed to complete profile" });
-    }
-  });
-
-  // Get usage stats for free users
-  app.get('/api/auth/usage-stats', async (req: any, res) => {
-    if (req.isAuthenticated()) {
-      return res.json({ 
-        isAuthenticated: true,
-        unlimited: true 
-      });
-    }
-
-    const usageMinutes = req.session?.totalUsageMinutes || 0;
-    const remainingMinutes = Math.max(0, 120 - usageMinutes);
-
-    res.json({
-      isAuthenticated: false,
-      usedMinutes: usageMinutes,
-      remainingMinutes,
-      totalMinutes: 120,
-      limitExceeded: remainingMinutes === 0
-    });
-  });
-
-  // API Key Management Routes
-  app.post('/api/keys', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const userEmail = req.user.email?.toLowerCase();
-      const { name } = req.body;
-      
-      // Only allow authorized admin email to create API keys
-      const AUTHORIZED_ADMIN_EMAIL = 'amanss21229@gmail.com';
-      if (userEmail !== AUTHORIZED_ADMIN_EMAIL) {
-        return res.status(403).json({ 
-          error: 'Unauthorized',
-          message: 'API key creation is restricted to authorized administrators only. Please contact eduaman07@gmail.com for access.'
-        });
-      }
-      
-      if (!name || !name.trim()) {
-        return res.status(400).json({ error: 'API key name is required' });
-      }
-
-      const plainKey = generateApiKey();
-      const hashedKey = hashApiKey(plainKey);
-      
-      const apiKey = await storage.createApiKey({
-        userId,
-        key: hashedKey,
-        name: name.trim(),
-        isActive: true,
-        lastUsed: null,
-      });
-
-      res.json({ 
-        id: apiKey.id,
-        name: apiKey.name,
-        key: plainKey,
-        createdAt: apiKey.createdAt,
-        message: 'API key created successfully. Save this key securely - it will not be shown again.'
-      });
-    } catch (error) {
-      console.error('Create API key error:', error);
-      res.status(500).json({ error: 'Failed to create API key' });
-    }
-  });
-
-  app.get('/api/keys', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const keys = await storage.getApiKeysByUser(userId);
-      
-      const sanitizedKeys = keys.map(k => ({
-        id: k.id,
-        name: k.name,
-        key: `${k.key.substring(0, 8)}...${k.key.substring(k.key.length - 4)}`,
-        lastUsed: k.lastUsed,
-        isActive: k.isActive,
-        createdAt: k.createdAt,
-      }));
-      
-      res.json(sanitizedKeys);
-    } catch (error) {
-      console.error('Get API keys error:', error);
-      res.status(500).json({ error: 'Failed to get API keys' });
-    }
-  });
-
-  app.delete('/api/keys/:id', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { id } = req.params;
-      
-      const keys = await storage.getApiKeysByUser(userId);
-      const keyToDelete = keys.find(k => k.id === id);
-      
-      if (!keyToDelete) {
-        return res.status(404).json({ error: 'API key not found' });
-      }
-
-      await storage.deleteApiKey(id);
-      res.json({ message: 'API key revoked successfully' });
-    } catch (error) {
-      console.error('Delete API key error:', error);
-      res.status(500).json({ error: 'Failed to delete API key' });
-    }
-  });
-  
   // Create or get conversation
   app.post("/api/conversations", async (req: any, res: Response) => {
     try {
       const { title } = req.body;
       
-      // Use authenticated user ID if logged in, otherwise null for guest
-      const userId = req.isAuthenticated() ? req.user.id : null;
-      
       const conversation = await storage.createConversation({
-        userId,
+        userId: null,
         title: title || null,
       });
       
@@ -223,8 +82,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Submit question (text) - Available to all, with time tracking for free users
-  app.post("/api/questions/text", checkFreeUserLimit, async (req: any, res: Response) => {
+  // Submit question (text) - Available to all users
+  app.post("/api/questions/text", async (req: any, res: Response) => {
     try {
       const { conversationId, questionText, language = 'english' } = req.body;
       
@@ -232,27 +91,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Question text is required' });
       }
 
-      // Track usage for free users (add 1 minute per question)
-      if (!req.isAuthenticated() && req.session) {
-        req.session.totalUsageMinutes = (req.session.totalUsageMinutes || 0) + 1;
-      }
-      
-      // Get user name for personalized conversation
-      let userName: string | undefined;
-      if (req.isAuthenticated()) {
-        const user = await storage.getUser(req.user.id);
-        userName = user?.name || user?.firstName || undefined;
-      } else if (req.session?.userName) {
-        userName = req.session.userName;
-      }
-      
       // Extract name from conversation if user introduces themselves
+      let userName: string | undefined;
       const nameMatch = questionText.match(/(?:my name is|i am|i'm|mera naam|main)\s+([A-Za-z]+)/i);
       if (nameMatch && nameMatch[1]) {
         userName = nameMatch[1];
-        if (req.session) {
-          req.session.userName = userName;
-        }
       }
       
       // Create question
@@ -307,8 +150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Submit question (image) - Requires login
-  app.post("/api/questions/image", requireAuthForPremiumFeatures, upload.single('image'), async (req: any, res: Response) => {
+  // Submit question (image) - Available to all users
+  app.post("/api/questions/image", upload.single('image'), async (req: any, res: Response) => {
     try {
       const { conversationId, language = 'english' } = req.body;
       
@@ -321,13 +164,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!extractedText.trim()) {
         return res.status(400).json({ error: 'No text could be extracted from the image' });
-      }
-      
-      // Get user name for personalized conversation
-      let userName: string | undefined;
-      if (req.isAuthenticated()) {
-        const user = await storage.getUser(req.user.id);
-        userName = user?.name || user?.firstName || undefined;
       }
       
       // Create question
@@ -474,48 +310,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user's conversation history
-  app.get("/api/history", isAuthenticated, async (req: any, res: Response) => {
+  // Get user's conversation history - Disabled (no authentication)
+  app.get("/api/history", async (req: any, res: Response) => {
     try {
-      const userId = req.user.id;
-      const history = await storage.getUserHistory(userId);
-      res.json(history);
+      res.json([]);
     } catch (error) {
       console.error('Get history error:', error);
       res.status(500).json({ error: 'Failed to get history' });
     }
   });
 
-  // Get bookmarked solutions
-  app.get("/api/saved-solutions", isAuthenticated, async (req: any, res: Response) => {
+  // Get bookmarked solutions - Disabled (no authentication)
+  app.get("/api/saved-solutions", async (req: any, res: Response) => {
     try {
-      const userId = req.user.id;
-      const bookmarked = await storage.getBookmarkedSolutions(userId);
-      res.json(bookmarked);
+      res.json([]);
     } catch (error) {
       console.error('Get saved solutions error:', error);
       res.status(500).json({ error: 'Failed to get saved solutions' });
     }
   });
 
-  // Get user progress analytics
-  app.get("/api/progress", isAuthenticated, async (req: any, res: Response) => {
+  // Get user progress analytics - Disabled (no authentication)
+  app.get("/api/progress", async (req: any, res: Response) => {
     try {
-      const userId = req.user.id;
-      const progress = await storage.getUserProgress(userId);
-      res.json(progress);
+      res.json({
+        totalQuestions: 0,
+        subjectBreakdown: {},
+        recentActivity: []
+      });
     } catch (error) {
       console.error('Get progress error:', error);
       res.status(500).json({ error: 'Failed to get progress' });
     }
   });
 
-  // Toggle bookmark on solution
-  app.post("/api/solutions/:id/bookmark", isAuthenticated, async (req: Request, res: Response) => {
+  // Toggle bookmark on solution - Disabled (no authentication)
+  app.post("/api/solutions/:id/bookmark", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const solution = await storage.toggleBookmark(id);
-      res.json(solution);
+      res.json({ message: 'Bookmark feature disabled without authentication' });
     } catch (error) {
       console.error('Toggle bookmark error:', error);
       res.status(500).json({ error: 'Failed to toggle bookmark' });
