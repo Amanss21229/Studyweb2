@@ -1,61 +1,37 @@
 // client/src/lib/usePageMeta.tsx
+
 import { useEffect } from "react";
 
-export default function usePageMeta(
-  title?: string,
-  description?: string,
-  canonical?: string,
-  image?: string
-) {
+interface MetaProps {
+  title?: string;
+  description?: string;
+  keywords?: string;
+  canonical?: string;
+}
+
+export function usePageMeta({
+  title = "AIMAI - Smart AI for NEET, JEE & NCERT",
+  description = "Get instant AI-powered solutions for NEET, JEE & NCERT questions. Aimai helps students solve complex problems in seconds with smart, human-like AI answers.",
+  keywords = "NEET AI, JEE AI, NCERT solutions, NEET preparation, Aimai app, AI for students, Study AI, Aimai study app",
+  canonical = "https://aimai.onrender.com",
+}: MetaProps) {
   useEffect(() => {
-    // Title
-    if (title) document.title = title;
+    document.title = title;
 
-    // Description meta
-    if (description) {
-      let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
-      if (!meta) {
-        meta = document.createElement("meta");
-        meta.setAttribute("name", "description");
-        document.head.appendChild(meta);
-      }
-      meta.setAttribute("content", description);
-    }
+    const metaDesc = document.querySelector("meta[name='description']");
+    const metaKeywords = document.querySelector("meta[name='keywords']");
+    const linkCanonical = document.querySelector("link[rel='canonical']");
 
-    // Helper to add/update meta by property (og:) or name
-    function upsertMeta(attrName: "name" | "property", attrValue: string, content: string) {
-      const selector = attrName === "property"
-        ? `meta[property="${attrValue}"]`
-        : `meta[name="${attrValue}"]`;
-      let m = document.querySelector(selector) as HTMLMetaElement | null;
-      if (!m) {
-        m = document.createElement("meta");
-        m.setAttribute(attrName, attrValue);
-        document.head.appendChild(m);
-      }
-      m.setAttribute("content", content);
-    }
+    if (metaDesc) metaDesc.setAttribute("content", description);
+    if (metaKeywords) metaKeywords.setAttribute("content", keywords);
 
-    // Open Graph
-    if (title) upsertMeta("property", "og:title", title);
-    if (description) upsertMeta("property", "og:description", description);
-    if (image) upsertMeta("property", "og:image", image);
-
-    // Twitter card
-    if (title) upsertMeta("name", "twitter:title", title);
-    if (description) upsertMeta("name", "twitter:description", description);
-    if (image) upsertMeta("name", "twitter:image", image);
-    upsertMeta("name", "twitter:card", "summary_large_image");
-
-    // Canonical
-    let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (!link) {
-      link = document.createElement("link");
+    if (linkCanonical) {
+      linkCanonical.setAttribute("href", canonical);
+    } else {
+      const link = document.createElement("link");
       link.setAttribute("rel", "canonical");
+      link.setAttribute("href", canonical);
       document.head.appendChild(link);
     }
-    link.setAttribute("href", canonical || window.location.href);
-
-    // cleanup not necessary for SPA since we overwrite values on next calls
-  }, [title, description, canonical, image]);
-    }
+  }, [title, description, keywords, canonical]);
+}
