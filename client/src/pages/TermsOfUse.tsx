@@ -1,9 +1,17 @@
 import { Link } from "wouter";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { ArrowLeft, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function TermsOfUse() {
+  usePageMeta(
+    "AimAi — Terms of Use",
+    "Terms and conditions for using AimAi's web app, services and quizzes.",
+    "https://aimai.onrender.com/terms-of-use",
+    "https://aimai.onrender.com/og-image.png"
+  );
+  
   return (
     <div className="min-h-screen bg-background" data-testid="terms-of-use-page">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
