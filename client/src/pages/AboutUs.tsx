@@ -1,9 +1,19 @@
 import { Link } from "wouter";
+import { usePageMeta } from "@/lib/usePageMeta";
+
 import { ArrowLeft, GraduationCap, Target, Shield, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AboutUs() {
+
+  usePageMeta(
+    "About AimAi — Mission & Team",
+    "Learn about AimAi — our mission to help NEET & JEE students with AI-based practice tests, step-by-step solutions and study analytics.",
+    "https://aimai.onrender.com/about-us",
+    "https://aimai.onrender.com/og-image.png"
+  );
+  
   return (
     <div className="min-h-screen bg-background" data-testid="about-us-page">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
