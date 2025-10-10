@@ -189,9 +189,18 @@ export function InputPanel({ onSubmitText, onSubmitImage, onSubmitAudio, isLoadi
 
     ctx.lineTo(x, y);
     ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
   };
 
   const stopDrawing = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.closePath();
     setIsDrawing(false);
   };
 
