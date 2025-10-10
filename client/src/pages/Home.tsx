@@ -6,14 +6,12 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-  usePageMeta(
-    "AimAi — AI Tutor for NEET & JEE",
-    "AimAi: Personalized AI-powered quizzes, NCERT-aligned solutions and study help for NEET & JEE aspirants. Practice smart, learn fast.",
-    "https://aimai.onrender.com/",
-    "https://aimai.onrender.com/og-image.png"
-  );
+  usePageMeta({
+    title: "Aimai | AI for NEET, JEE & NCERT",
+    description: "Instant AI-powered solutions for NEET, JEE & NCERT questions. Solve doubts instantly using Aimai’s smart AI chat.",
+  });
   
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   return (
     <main className="container mx-auto px-4 py-6 max-w-7xl" data-testid="home-page">
       {/* Hamburger Menu */}
