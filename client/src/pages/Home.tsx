@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-
   usePageMeta(
     "AimAi — AI Tutor for NEET & JEE",
     "AimAi: Personalized AI-powered quizzes, NCERT-aligned solutions and study help for NEET & JEE aspirants. Practice smart, learn fast.",
