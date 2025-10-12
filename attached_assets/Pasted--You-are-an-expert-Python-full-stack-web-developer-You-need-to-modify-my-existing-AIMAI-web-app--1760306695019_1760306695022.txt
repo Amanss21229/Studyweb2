@@ -1,0 +1,65 @@
+
+You are an expert Python full-stack web developer.  
+You need to modify my existing AIMAI web app (already live on https://aimai.onrender.com) to support Telegram bot integration.
+
+⚙️ Main goal:
+When a user searches a question from Telegram, the bot will call an API endpoint on this site.
+The API must find the question in the database and return the solution link as JSON.
+
+🧩 Your tasks:
+1. Create a new GET endpoint `/api/search` (without disturbing any existing routes).
+   - Accept a query parameter: `query`
+   - Accept an optional security key: `key`
+   - Example: `/api/search?query=Who+is+the+father+of+biology&key=YOUR_SECRET_KEY`
+
+2. Check:
+   - If the `key` does not match the predefined API_KEY (stored in `.env`), return:
+     `{ "success": false, "message": "Invalid API key" }`
+   - If query is empty, return:
+     `{ "success": false, "message": "Empty query" }`
+
+3. Database search logic:
+   - Search for the question text similar to the `query`.
+   - You can use your existing question model or table.
+   - Use fuzzy string matching (Levenshtein / SequenceMatcher / case-insensitive LIKE) to find the closest match.
+   - If a match is found, return:
+     ```
+     {
+       "success": true,
+       "question": "matched question text",
+       "solution_link": "https://aimai.onrender.com/solution/<id>"
+     }
+     ```
+   - If no match, return:
+     `{ "success": false, "message": "No solution found" }`
+
+4. Add a log entry for every API request in a new database table or file log:
+   - Fields: timestamp, query, matched_question_id (if found), success (True/False), source="telegram"
+   - Store it in `api_logs` table or a JSON log file.
+
+5. Security:
+   - Load API_KEY from `.env` file (if not exists, create it and add a default key like `API_KEY="AIMAI123"`).
+   - Protect the API with this key.
+
+6. Do not touch or break any existing routes or functions.
+   - Just append this new feature.
+   - Ensure compatibility with existing Flask app structure.
+
+7. Optional optimization:
+   - Add a helper function `find_best_match(query)` that encapsulates the search logic (text similarity + DB lookup).
+
+8. Return all responses in proper JSON using `jsonify()`.
+
+✅ Example Response (success):
+
+{ "success": true, "question": "Who is the father of biology?", "solution_link": "https://aimai.onrender.com/solution/UwMeVXhIBZq4" }
+
+❌ Example Response (fail):
+
+{ "success": false, "message": "No solution found" }
+
+Make sure this API is lightweight, fast, and works on Render.com deployment.
+
+Do not delete or modify any existing code.
+Only append the new API, logging, and .env key configuration.
+

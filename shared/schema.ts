@@ -118,6 +118,17 @@ export const apiKeys = pgTable("api_keys", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const apiLogs = pgTable("api_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  query: text("query").notNull(),
+  matchedQuestionId: varchar("matched_question_id").references(() => questions.id),
+  success: boolean("success").notNull().default(false),
+  source: varchar("source", { length: 50 }).notNull().default('telegram'),
+  apiKey: varchar("api_key", { length: 64 }),
+  responseMessage: text("response_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   conversations: many(conversations),
@@ -206,6 +217,11 @@ export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
   createdAt: true,
 });
 
+export const insertApiLogSchema = createInsertSchema(apiLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -229,3 +245,6 @@ export type InsertExamCriteria = z.infer<typeof insertExamCriteriaSchema>;
 
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+
+export type ApiLog = typeof apiLogs.$inferSelect;
+export type InsertApiLog = z.infer<typeof insertApiLogSchema>;
