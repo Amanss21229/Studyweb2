@@ -1,12 +1,13 @@
 import { 
-  users, conversations, questions, solutions, examUpdates, examCriteria, apiKeys,
+  users, conversations, questions, solutions, examUpdates, examCriteria, apiKeys, apiLogs,
   type User, type InsertUser, type UpsertUser, type CompleteProfile,
   type Conversation, type InsertConversation,
   type Question, type InsertQuestion,
   type Solution, type InsertSolution,
   type ExamUpdate, type InsertExamUpdate,
   type ExamCriteria, type InsertExamCriteria,
-  type ApiKey, type InsertApiKey
+  type ApiKey, type InsertApiKey,
+  type ApiLog, type InsertApiLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -65,6 +66,13 @@ export interface IStorage {
   getApiKeysByUser(userId: string): Promise<ApiKey[]>;
   deleteApiKey(id: string): Promise<void>;
   updateApiKeyLastUsed(key: string): Promise<void>;
+
+  // API Logs
+  createApiLog(log: InsertApiLog): Promise<ApiLog>;
+  
+  // Question Search
+  getAllQuestions(): Promise<Question[]>;
+  searchQuestionsByText(query: string, threshold?: number): Promise<Array<Question & { solution: Solution; similarity: number }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -515,6 +523,55 @@ export class DatabaseStorage implements IStorage {
       .update(apiKeys)
       .set({ lastUsed: new Date() })
       .where(eq(apiKeys.key, key));
+  }
+
+  // API Logs
+  async createApiLog(logData: InsertApiLog): Promise<ApiLog> {
+    const [log] = await db
+      .insert(apiLogs)
+      .values(logData)
+      .returning();
+    return log;
+  }
+
+  // Question Search
+  async getAllQuestions(): Promise<Question[]> {
+    return await db
+      .select()
+      .from(questions)
+      .orderBy(desc(questions.createdAt));
+  }
+
+  async searchQuestionsByText(query: string, threshold: number = 0.3): Promise<Array<Question & { solution: Solution; similarity: number }>> {
+    const { compareTwoStrings } = await import('string-similarity');
+    
+    // Get all questions with their solutions
+    const allQuestions = await this.getAllQuestions();
+    const matches: Array<Question & { solution: Solution; similarity: number }> = [];
+
+    for (const question of allQuestions) {
+      // Calculate similarity between query and question text
+      const similarity = compareTwoStrings(
+        query.toLowerCase().trim(),
+        question.questionText.toLowerCase().trim()
+      );
+
+      // If similarity is above threshold, include it
+      if (similarity >= threshold) {
+        // Get the first solution for this question
+        const questionSolutions = await this.getSolutionsByQuestion(question.id);
+        if (questionSolutions.length > 0) {
+          matches.push({
+            ...question,
+            solution: questionSolutions[0],
+            similarity
+          });
+        }
+      }
+    }
+
+    // Sort by similarity (highest first)
+    return matches.sort((a, b) => b.similarity - a.similarity);
   }
 }
 
