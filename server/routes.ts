@@ -450,6 +450,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     let success = false;
     let responseMessage = '';
 
+    // Redact API key for logging (show only last 4 chars)
+    const redactedKey = key ? `***${(key as string).slice(-4)}` : 'none';
+
     try {
       // Validate API key (check environment variable or database)
       const expectedApiKey = process.env.API_KEY || 'AIMAI123';
@@ -461,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           matchedQuestionId: null,
           success: false,
           source: 'telegram',
-          apiKey: key as string,
+          apiKey: redactedKey,
           responseMessage,
         });
         return res.json({ 
@@ -478,7 +481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           matchedQuestionId: null,
           success: false,
           source: 'telegram',
-          apiKey: key as string,
+          apiKey: redactedKey,
           responseMessage,
         });
         return res.json({ 
@@ -497,7 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           matchedQuestionId: null,
           success: false,
           source: 'telegram',
-          apiKey: key as string,
+          apiKey: redactedKey,
           responseMessage,
         });
         return res.json({ 
@@ -518,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         matchedQuestionId,
         success: true,
         source: 'telegram',
-        apiKey: key as string,
+        apiKey: redactedKey,
         responseMessage,
       });
 
@@ -541,7 +544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         matchedQuestionId: null,
         success: false,
         source: 'telegram',
-        apiKey: key as string,
+        apiKey: redactedKey,
         responseMessage,
       });
 
