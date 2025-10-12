@@ -442,6 +442,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search API for Telegram bot - GET endpoint with query parameter
+  app.get("/api/search", async (req: Request, res: Response) => {
+    const startTime = Date.now();
+    const { query, key } = req.query;
+    let matchedQuestionId: string | null = null;
+    let success = false;
+    let responseMessage = '';
+
+    try {
+      // Validate API key (check environment variable or database)
+      const expectedApiKey = process.env.API_KEY || 'AIMAI123';
+      
+      if (!key || key !== expectedApiKey) {
+        responseMessage = 'Invalid API key';
+        await storage.createApiLog({
+          query: (query as string) || '',
+          matchedQuestionId: null,
+          success: false,
+          source: 'telegram',
+          apiKey: key as string,
+          responseMessage,
+        });
+        return res.json({ 
+          success: false, 
+          message: responseMessage 
+        });
+      }
+
+      // Check if query is empty
+      if (!query || (query as string).trim() === '') {
+        responseMessage = 'Empty query';
+        await storage.createApiLog({
+          query: '',
+          matchedQuestionId: null,
+          success: false,
+          source: 'telegram',
+          apiKey: key as string,
+          responseMessage,
+        });
+        return res.json({ 
+          success: false, 
+          message: responseMessage 
+        });
+      }
+
+      // Search for similar questions using fuzzy matching
+      const matches = await storage.searchQuestionsByText(query as string, 0.3);
+      
+      if (matches.length === 0) {
+        responseMessage = 'No solution found';
+        await storage.createApiLog({
+          query: query as string,
+          matchedQuestionId: null,
+          success: false,
+          source: 'telegram',
+          apiKey: key as string,
+          responseMessage,
+        });
+        return res.json({ 
+          success: false, 
+          message: responseMessage 
+        });
+      }
+
+      // Get the best match (first one, as they're sorted by similarity)
+      const bestMatch = matches[0];
+      matchedQuestionId = bestMatch.id;
+      success = true;
+      responseMessage = 'Match found';
+
+      // Log the successful API request
+      await storage.createApiLog({
+        query: query as string,
+        matchedQuestionId,
+        success: true,
+        source: 'telegram',
+        apiKey: key as string,
+        responseMessage,
+      });
+
+      // Return success response with solution link
+      const solutionLink = `${req.protocol}://${req.get('host')}/solution/${bestMatch.solution.shareUrl}`;
+      
+      res.json({
+        success: true,
+        question: bestMatch.questionText,
+        solution_link: solutionLink,
+        similarity: Math.round(bestMatch.similarity * 100) / 100
+      });
+
+    } catch (error) {
+      console.error('Search API error:', error);
+      responseMessage = 'Internal server error';
+      
+      await storage.createApiLog({
+        query: (query as string) || '',
+        matchedQuestionId: null,
+        success: false,
+        source: 'telegram',
+        apiKey: key as string,
+        responseMessage,
+      });
+
+      res.status(500).json({ 
+        success: false, 
+        message: 'An error occurred while searching' 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
