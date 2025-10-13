@@ -24,6 +24,7 @@ export interface IStorage {
   // Conversations
   getConversation(id: string): Promise<Conversation | undefined>;
   getConversationsByUser(userId: string): Promise<Conversation[]>;
+  getAllConversations(): Promise<Conversation[]>;
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   updateConversation(id: string, title: string): Promise<Conversation>;
 
@@ -178,6 +179,13 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(conversations)
       .where(eq(conversations.userId, userId))
+      .orderBy(desc(conversations.updatedAt));
+  }
+
+  async getAllConversations(): Promise<Conversation[]> {
+    return await db
+      .select()
+      .from(conversations)
       .orderBy(desc(conversations.updatedAt));
   }
 

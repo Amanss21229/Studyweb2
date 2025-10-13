@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ConversationMessage } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import botAvatar from "@assets/IMG_20250826_123716_907_1759607150583.jpg";
 
 interface MessageListProps {
@@ -18,6 +18,16 @@ export function MessageList({ messages, isTyping, onShare }: MessageListProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const initialBookmarked = new Set<string>();
+    messages.forEach(message => {
+      if (message.type === 'solution' && message.id && (message as any).isBookmarked) {
+        initialBookmarked.add(message.id);
+      }
+    });
+    setBookmarkedIds(initialBookmarked);
+  }, [messages]);
 
   const bookmarkMutation = useMutation({
     mutationFn: async (solutionId: string) => {

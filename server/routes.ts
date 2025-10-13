@@ -68,6 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             topic: solution.topic,
             neetJeePyq: solution.neetJeePyq,
             shareUrl: solution.shareUrl,
+            isBookmarked: solution.isBookmarked,
             createdAt: solution.createdAt,
           });
         }
@@ -310,33 +311,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user's conversation history - Disabled (no authentication)
+  // Get user's conversation history
   app.get("/api/history", async (req: any, res: Response) => {
     try {
-      res.json([]);
+      const allConversations = await storage.getAllConversations();
+      
+      const results = await Promise.all(
+        allConversations.map(async (conv) => {
+          const convQuestions = await storage.getQuestionsByConversation(conv.id);
+          return {
+            ...conv,
+            questions: convQuestions,
+            questionCount: convQuestions.length
+          };
+        })
+      );
+      
+      const historyWithQuestions = results.filter(r => r.questionCount > 0);
+      res.json(historyWithQuestions);
     } catch (error) {
       console.error('Get history error:', error);
       res.status(500).json({ error: 'Failed to get history' });
     }
   });
 
-  // Get bookmarked solutions - Disabled (no authentication)
+  // Get bookmarked solutions
   app.get("/api/saved-solutions", async (req: any, res: Response) => {
     try {
-      res.json([]);
+      const allConversations = await storage.getAllConversations();
+      const results: any[] = [];
+      
+      for (const conv of allConversations) {
+        const convQuestions = await storage.getQuestionsByConversation(conv.id);
+        
+        for (const question of convQuestions) {
+          const questionSolutions = await storage.getSolutionsByQuestion(question.id);
+          const bookmarkedSolutions = questionSolutions.filter(s => s.isBookmarked);
+          
+          for (const sol of bookmarkedSolutions) {
+            results.push({
+              ...sol,
+              question,
+              conversation: conv
+            });
+          }
+        }
+      }
+      
+      const sortedResults = results.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      res.json(sortedResults);
     } catch (error) {
       console.error('Get saved solutions error:', error);
       res.status(500).json({ error: 'Failed to get saved solutions' });
     }
   });
 
-  // Get user progress analytics - Disabled (no authentication)
+  // Get user progress analytics
   app.get("/api/progress", async (req: any, res: Response) => {
     try {
+      const allConversations = await storage.getAllConversations();
+      
+      if (allConversations.length === 0) {
+        return res.json({
+          totalQuestions: 0,
+          subjectBreakdown: {},
+          weakAreas: [],
+          strongAreas: [],
+          recentActivity: []
+        });
+      }
+
+      const allQuestions: any[] = [];
+      for (const conv of allConversations) {
+        const questions = await storage.getQuestionsByConversation(conv.id);
+        allQuestions.push(...questions);
+      }
+
+      const subjectBreakdown: Record<string, { count: number; topics: string[]; chapters: string[] }> = {};
+      const chapterCounts: Record<string, number> = {};
+      const activityByDate: Record<string, number> = {};
+
+      for (const q of allQuestions) {
+        if (q.subject) {
+          if (!subjectBreakdown[q.subject]) {
+            subjectBreakdown[q.subject] = { count: 0, topics: [], chapters: [] };
+          }
+          subjectBreakdown[q.subject].count++;
+          
+          if (q.topic && !subjectBreakdown[q.subject].topics.includes(q.topic)) {
+            subjectBreakdown[q.subject].topics.push(q.topic);
+          }
+          if (q.chapter && !subjectBreakdown[q.subject].chapters.includes(q.chapter)) {
+            subjectBreakdown[q.subject].chapters.push(q.chapter);
+          }
+          
+          if (q.chapter) {
+            const key = `${q.subject}-${q.chapter}`;
+            chapterCounts[key] = (chapterCounts[key] || 0) + 1;
+          }
+        }
+
+        const date = new Date(q.createdAt).toISOString().split('T')[0];
+        activityByDate[date] = (activityByDate[date] || 0) + 1;
+      }
+
+      const sortedChapters = Object.entries(chapterCounts).sort((a, b) => a[1] - b[1]);
+      const weakAreas = sortedChapters.slice(0, 5).map(([key, count]) => {
+        const [subject, chapter] = key.split('-');
+        return { subject, chapter, count };
+      });
+
+      const strongAreas = sortedChapters.slice(-5).reverse().map(([key, count]) => {
+        const [subject, chapter] = key.split('-');
+        return { subject, chapter, count };
+      });
+
+      const last30Days = Array.from({ length: 30 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        return date.toISOString().split('T')[0];
+      });
+
+      const recentActivity = last30Days.map(date => ({
+        date,
+        count: activityByDate[date] || 0
+      }));
+
       res.json({
-        totalQuestions: 0,
-        subjectBreakdown: {},
-        recentActivity: []
+        totalQuestions: allQuestions.length,
+        subjectBreakdown,
+        weakAreas,
+        strongAreas,
+        recentActivity
       });
     } catch (error) {
       console.error('Get progress error:', error);
@@ -344,11 +453,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Toggle bookmark on solution - Disabled (no authentication)
+  // Toggle bookmark on solution
   app.post("/api/solutions/:id/bookmark", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      res.json({ message: 'Bookmark feature disabled without authentication' });
+      const solution = await storage.toggleBookmark(id);
+      res.json(solution);
     } catch (error) {
       console.error('Toggle bookmark error:', error);
       res.status(500).json({ error: 'Failed to toggle bookmark' });
