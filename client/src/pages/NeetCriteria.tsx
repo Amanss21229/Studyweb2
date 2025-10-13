@@ -8,8 +8,15 @@ import { format } from "date-fns";
 
 export default function NeetCriteria() {
   const { data: criteria, isLoading } = useQuery<ExamCriteria>({
-    queryKey: ['/api/exam-criteria', 'neet'],
+    queryKey: ['/api/exam-criteria/neet'],
   });
+
+  usePageMeta(
+    "NEET Eligibility & Criteria",
+    "Complete information on NEET eligibility, syllabus alignment and important dates. AimAi simplifies exam criteria for aspirants.",
+    "https://aimai.onrender.com/neet-criteria",
+    "https://aimai.onrender.com/og-image.png"
+  );
 
   if (isLoading) {
     return (
@@ -22,12 +29,6 @@ export default function NeetCriteria() {
       </div>
     );
   }
-  usePageMeta(
-    "NEET Eligibility & Criteria",
-    "Complete information on NEET eligibility, syllabus alignment and important dates. AimAi simplifies exam criteria for aspirants.",
-    "https://aimai.onrender.com/neet-criteria",
-    "https://aimai.onrender.com/og-image.png"
-  );
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-5xl" data-testid="neet-criteria-page">

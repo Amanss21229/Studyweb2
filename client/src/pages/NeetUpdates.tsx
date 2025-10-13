@@ -8,8 +8,15 @@ import { format } from "date-fns";
 
 export default function NeetUpdates() {
   const { data: updates = [], isLoading } = useQuery<ExamUpdate[]>({
-    queryKey: ['/api/exam-updates', 'neet'],
+    queryKey: ['/api/exam-updates/neet'],
   });
+
+  usePageMeta(
+    "NEET Updates — Latest Notifications & Tips",
+    "Latest NEET exam updates, notifications and important study tips curated for NEET aspirants by AimAi.",
+    "https://aimai.onrender.com/neet-updates",
+    "https://aimai.onrender.com/og-image.png"
+  );
 
   if (isLoading) {
     return (
@@ -22,12 +29,6 @@ export default function NeetUpdates() {
       </div>
     );
   }
-  usePageMeta(
-    "NEET Updates — Latest Notifications & Tips",
-    "Latest NEET exam updates, notifications and important study tips curated for NEET aspirants by AimAi.",
-    "https://aimai.onrender.com/neet-updates",
-    "https://aimai.onrender.com/og-image.png"
-  );
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-5xl" data-testid="neet-updates-page">

@@ -8,8 +8,15 @@ import { format } from "date-fns";
 
 export default function JeeCriteria() {
   const { data: criteria, isLoading } = useQuery<ExamCriteria>({
-    queryKey: ['/api/exam-criteria', 'jee'],
+    queryKey: ['/api/exam-criteria/jee'],
   });
+
+  usePageMeta(
+    "JEE Eligibility & Criteria",
+    "Detailed JEE eligibility criteria, important guidelines and preparation pointers — from AimAi.",
+    "https://aimai.onrender.com/jee-criteria",
+    "https://aimai.onrender.com/og-image.png"
+  );
 
   if (isLoading) {
     return (
@@ -22,13 +29,6 @@ export default function JeeCriteria() {
       </div>
     );
   }
-
-  usePageMeta(
-    "JEE Eligibility & Criteria",
-    "Detailed JEE eligibility criteria, important guidelines and preparation pointers — from AimAi.",
-    "https://aimai.onrender.com/jee-criteria",
-    "https://aimai.onrender.com/og-image.png"
-  );
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-5xl" data-testid="jee-criteria-page">
