@@ -1,5 +1,6 @@
 import { 
   users, conversations, questions, solutions, examUpdates, examCriteria, apiKeys, apiLogs,
+  newsArticles, blogPosts, seoQuestions,
   type User, type InsertUser, type UpsertUser, type CompleteProfile,
   type Conversation, type InsertConversation,
   type Question, type InsertQuestion,
@@ -7,7 +8,10 @@ import {
   type ExamUpdate, type InsertExamUpdate,
   type ExamCriteria, type InsertExamCriteria,
   type ApiKey, type InsertApiKey,
-  type ApiLog, type InsertApiLog
+  type ApiLog, type InsertApiLog,
+  type NewsArticle, type InsertNewsArticle,
+  type BlogPost, type InsertBlogPost,
+  type SeoQuestion, type InsertSeoQuestion
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -74,6 +78,37 @@ export interface IStorage {
   // Question Search
   getAllQuestions(): Promise<Question[]>;
   searchQuestionsByText(query: string, threshold?: number): Promise<Array<Question & { solution: Solution; similarity: number }>>;
+
+  // News Articles
+  getNewsArticle(id: string): Promise<NewsArticle | undefined>;
+  getNewsArticleBySlug(slug: string): Promise<NewsArticle | undefined>;
+  getAllNewsArticles(): Promise<NewsArticle[]>;
+  getNewsArticlesByExamType(examType: string): Promise<NewsArticle[]>;
+  getPublishedNewsArticles(): Promise<NewsArticle[]>;
+  createNewsArticle(article: InsertNewsArticle): Promise<NewsArticle>;
+  updateNewsArticle(id: string, updates: Partial<InsertNewsArticle>): Promise<NewsArticle>;
+  deleteNewsArticle(id: string): Promise<void>;
+  incrementNewsArticleView(id: string): Promise<void>;
+
+  // Blog Posts
+  getBlogPost(id: string): Promise<BlogPost | undefined>;
+  getBlogPostBySlug(slug: string): Promise<BlogPost | undefined>;
+  getAllBlogPosts(): Promise<BlogPost[]>;
+  getBlogPostsByCategory(category: string): Promise<BlogPost[]>;
+  getPublishedBlogPosts(): Promise<BlogPost[]>;
+  createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
+  updateBlogPost(id: string, updates: Partial<InsertBlogPost>): Promise<BlogPost>;
+  deleteBlogPost(id: string): Promise<void>;
+  incrementBlogPostView(id: string): Promise<void>;
+
+  // SEO Questions
+  getSeoQuestion(id: string): Promise<SeoQuestion | undefined>;
+  getSeoQuestionBySlug(slug: string): Promise<SeoQuestion | undefined>;
+  getAllSeoQuestions(): Promise<SeoQuestion[]>;
+  createSeoQuestion(seoQuestion: InsertSeoQuestion): Promise<SeoQuestion>;
+  updateSeoQuestion(id: string, updates: Partial<InsertSeoQuestion>): Promise<SeoQuestion>;
+  incrementSeoQuestionView(id: string): Promise<void>;
+  getRelatedSeoQuestions(questionId: string, limit?: number): Promise<SeoQuestion[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -580,6 +615,186 @@ export class DatabaseStorage implements IStorage {
 
     // Sort by similarity (highest first)
     return matches.sort((a, b) => b.similarity - a.similarity);
+  }
+
+  // News Articles
+  async getNewsArticle(id: string): Promise<NewsArticle | undefined> {
+    const [article] = await db.select().from(newsArticles).where(eq(newsArticles.id, id));
+    return article || undefined;
+  }
+
+  async getNewsArticleBySlug(slug: string): Promise<NewsArticle | undefined> {
+    const [article] = await db.select().from(newsArticles).where(eq(newsArticles.slug, slug));
+    return article || undefined;
+  }
+
+  async getAllNewsArticles(): Promise<NewsArticle[]> {
+    return await db
+      .select()
+      .from(newsArticles)
+      .orderBy(desc(newsArticles.publishedAt));
+  }
+
+  async getNewsArticlesByExamType(examType: string): Promise<NewsArticle[]> {
+    return await db
+      .select()
+      .from(newsArticles)
+      .where(eq(newsArticles.examType, examType))
+      .orderBy(desc(newsArticles.publishedAt));
+  }
+
+  async getPublishedNewsArticles(): Promise<NewsArticle[]> {
+    return await db
+      .select()
+      .from(newsArticles)
+      .where(eq(newsArticles.isPublished, true))
+      .orderBy(desc(newsArticles.publishedAt));
+  }
+
+  async createNewsArticle(article: InsertNewsArticle): Promise<NewsArticle> {
+    const [newArticle] = await db.insert(newsArticles).values(article).returning();
+    return newArticle;
+  }
+
+  async updateNewsArticle(id: string, updates: Partial<InsertNewsArticle>): Promise<NewsArticle> {
+    const [updated] = await db
+      .update(newsArticles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(newsArticles.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteNewsArticle(id: string): Promise<void> {
+    await db.delete(newsArticles).where(eq(newsArticles.id, id));
+  }
+
+  async incrementNewsArticleView(id: string): Promise<void> {
+    const article = await this.getNewsArticle(id);
+    if (article) {
+      await db
+        .update(newsArticles)
+        .set({ viewCount: article.viewCount + 1 })
+        .where(eq(newsArticles.id, id));
+    }
+  }
+
+  // Blog Posts
+  async getBlogPost(id: string): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    return post || undefined;
+  }
+
+  async getBlogPostBySlug(slug: string): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.slug, slug));
+    return post || undefined;
+  }
+
+  async getAllBlogPosts(): Promise<BlogPost[]> {
+    return await db
+      .select()
+      .from(blogPosts)
+      .orderBy(desc(blogPosts.publishedAt));
+  }
+
+  async getBlogPostsByCategory(category: string): Promise<BlogPost[]> {
+    return await db
+      .select()
+      .from(blogPosts)
+      .where(eq(blogPosts.category, category))
+      .orderBy(desc(blogPosts.publishedAt));
+  }
+
+  async getPublishedBlogPosts(): Promise<BlogPost[]> {
+    return await db
+      .select()
+      .from(blogPosts)
+      .where(eq(blogPosts.isPublished, true))
+      .orderBy(desc(blogPosts.publishedAt));
+  }
+
+  async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    const [newPost] = await db.insert(blogPosts).values(post).returning();
+    return newPost;
+  }
+
+  async updateBlogPost(id: string, updates: Partial<InsertBlogPost>): Promise<BlogPost> {
+    const [updated] = await db
+      .update(blogPosts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(blogPosts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBlogPost(id: string): Promise<void> {
+    await db.delete(blogPosts).where(eq(blogPosts.id, id));
+  }
+
+  async incrementBlogPostView(id: string): Promise<void> {
+    const post = await this.getBlogPost(id);
+    if (post) {
+      await db
+        .update(blogPosts)
+        .set({ viewCount: post.viewCount + 1 })
+        .where(eq(blogPosts.id, id));
+    }
+  }
+
+  // SEO Questions
+  async getSeoQuestion(id: string): Promise<SeoQuestion | undefined> {
+    const [seoQuestion] = await db.select().from(seoQuestions).where(eq(seoQuestions.id, id));
+    return seoQuestion || undefined;
+  }
+
+  async getSeoQuestionBySlug(slug: string): Promise<SeoQuestion | undefined> {
+    const [seoQuestion] = await db.select().from(seoQuestions).where(eq(seoQuestions.slug, slug));
+    return seoQuestion || undefined;
+  }
+
+  async getAllSeoQuestions(): Promise<SeoQuestion[]> {
+    return await db
+      .select()
+      .from(seoQuestions)
+      .orderBy(desc(seoQuestions.createdAt));
+  }
+
+  async createSeoQuestion(seoQuestion: InsertSeoQuestion): Promise<SeoQuestion> {
+    const [newSeoQuestion] = await db.insert(seoQuestions).values(seoQuestion).returning();
+    return newSeoQuestion;
+  }
+
+  async updateSeoQuestion(id: string, updates: Partial<InsertSeoQuestion>): Promise<SeoQuestion> {
+    const [updated] = await db
+      .update(seoQuestions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(seoQuestions.id, id))
+      .returning();
+    return updated;
+  }
+
+  async incrementSeoQuestionView(id: string): Promise<void> {
+    const seoQuestion = await this.getSeoQuestion(id);
+    if (seoQuestion) {
+      await db
+        .update(seoQuestions)
+        .set({ viewCount: seoQuestion.viewCount + 1 })
+        .where(eq(seoQuestions.id, id));
+    }
+  }
+
+  async getRelatedSeoQuestions(questionId: string, limit: number = 5): Promise<SeoQuestion[]> {
+    const question = await this.getQuestion(questionId);
+    if (!question) return [];
+
+    const allSeoQuestions = await this.getAllSeoQuestions();
+    const related = allSeoQuestions.filter(sq => {
+      const relatedIds = sq.relatedQuestionIds || [];
+      return relatedIds.includes(questionId) || 
+             (sq.questionId !== questionId && question.subject);
+    });
+
+    return related.slice(0, limit);
   }
 }
 

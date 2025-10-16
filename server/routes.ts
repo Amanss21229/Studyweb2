@@ -13,6 +13,16 @@ import {
   completeProfileSchema
 } from "@shared/schema";
 
+function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .substring(0, 100)
+    .replace(/^-+|-+$/g, '');
+}
+
 const upload = multer({ 
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
@@ -129,6 +139,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subject: aiResponse.subject,
         chapter: aiResponse.chapter,
         topic: aiResponse.topic,
+      });
+      
+      // Create SEO question page for Google indexing
+      const slug = generateSlug(questionText.substring(0, 80));
+      const uniqueSlug = `${slug}-${nanoid(6)}`;
+      const metaTitle = `${questionText.substring(0, 60)} - NEET/JEE Solution | AIMAI`;
+      const metaDescription = `Instant NEET/JEE AI answer by AIMAI. ${aiResponse.answer.substring(0, 100)}... Ask, Save & Share your doubts instantly!`;
+      const keywords = `${aiResponse.subject || 'NEET JEE'} question, ${aiResponse.chapter || 'NEET'}, ${aiResponse.topic || 'JEE'}, NEET 2025, JEE 2025, AIMAI`;
+      
+      await storage.createSeoQuestion({
+        slug: uniqueSlug,
+        questionId: question.id,
+        solutionId: solution.id,
+        metaTitle,
+        metaDescription,
+        keywords,
       });
       
       // Generate conversation title if it's the first question
@@ -663,6 +689,214 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'An error occurred while searching' 
       });
     }
+  });
+
+  // News Articles Routes
+  app.get("/api/news", async (req: Request, res: Response) => {
+    try {
+      const { examType } = req.query;
+      let articles;
+      
+      if (examType && (examType === 'neet' || examType === 'jee')) {
+        articles = await storage.getNewsArticlesByExamType(examType);
+      } else {
+        articles = await storage.getPublishedNewsArticles();
+      }
+      
+      res.json(articles);
+    } catch (error) {
+      console.error('Get news articles error:', error);
+      res.status(500).json({ error: 'Failed to get news articles' });
+    }
+  });
+
+  app.get("/api/news/:slug", async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      const article = await storage.getNewsArticleBySlug(slug);
+      
+      if (!article) {
+        return res.status(404).json({ error: 'News article not found' });
+      }
+      
+      await storage.incrementNewsArticleView(article.id);
+      res.json(article);
+    } catch (error) {
+      console.error('Get news article error:', error);
+      res.status(500).json({ error: 'Failed to get news article' });
+    }
+  });
+
+  app.post("/api/news", async (req: Request, res: Response) => {
+    try {
+      const article = await storage.createNewsArticle(req.body);
+      res.json(article);
+    } catch (error) {
+      console.error('Create news article error:', error);
+      res.status(500).json({ error: 'Failed to create news article' });
+    }
+  });
+
+  // Blog Posts Routes
+  app.get("/api/blog", async (req: Request, res: Response) => {
+    try {
+      const { category } = req.query;
+      let posts;
+      
+      if (category && typeof category === 'string') {
+        posts = await storage.getBlogPostsByCategory(category);
+      } else {
+        posts = await storage.getPublishedBlogPosts();
+      }
+      
+      res.json(posts);
+    } catch (error) {
+      console.error('Get blog posts error:', error);
+      res.status(500).json({ error: 'Failed to get blog posts' });
+    }
+  });
+
+  app.get("/api/blog/:slug", async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      const post = await storage.getBlogPostBySlug(slug);
+      
+      if (!post) {
+        return res.status(404).json({ error: 'Blog post not found' });
+      }
+      
+      await storage.incrementBlogPostView(post.id);
+      res.json(post);
+    } catch (error) {
+      console.error('Get blog post error:', error);
+      res.status(500).json({ error: 'Failed to get blog post' });
+    }
+  });
+
+  app.post("/api/blog", async (req: Request, res: Response) => {
+    try {
+      const post = await storage.createBlogPost(req.body);
+      res.json(post);
+    } catch (error) {
+      console.error('Create blog post error:', error);
+      res.status(500).json({ error: 'Failed to create blog post' });
+    }
+  });
+
+  // SEO Question Routes
+  app.get("/api/seo-questions/:slug", async (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      const seoQuestion = await storage.getSeoQuestionBySlug(slug);
+      
+      if (!seoQuestion) {
+        return res.status(404).json({ error: 'Question not found' });
+      }
+      
+      const question = await storage.getQuestion(seoQuestion.questionId);
+      const solution = await storage.getSolution(seoQuestion.solutionId);
+      const relatedQuestions = await storage.getRelatedSeoQuestions(seoQuestion.questionId, 5);
+      
+      await storage.incrementSeoQuestionView(seoQuestion.id);
+      
+      res.json({
+        ...seoQuestion,
+        question,
+        solution,
+        relatedQuestions
+      });
+    } catch (error) {
+      console.error('Get SEO question error:', error);
+      res.status(500).json({ error: 'Failed to get question' });
+    }
+  });
+
+  // Sitemap.xml Route
+  app.get("/sitemap.xml", async (req: Request, res: Response) => {
+    try {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      
+      const seoQuestions = await storage.getAllSeoQuestions();
+      const newsArticles = await storage.getPublishedNewsArticles();
+      const blogPosts = await storage.getPublishedBlogPosts();
+      
+      let sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+      
+      // Static pages
+      const staticPages = [
+        { loc: '/', priority: '1.0', changefreq: 'daily' },
+        { loc: '/news', priority: '0.9', changefreq: 'daily' },
+        { loc: '/blog', priority: '0.9', changefreq: 'weekly' },
+        { loc: '/about-us', priority: '0.7', changefreq: 'monthly' },
+        { loc: '/contact-us', priority: '0.7', changefreq: 'monthly' },
+        { loc: '/neet-updates', priority: '0.8', changefreq: 'daily' },
+        { loc: '/jee-updates', priority: '0.8', changefreq: 'daily' },
+      ];
+      
+      staticPages.forEach(page => {
+        sitemap += `  <url>\n`;
+        sitemap += `    <loc>${baseUrl}${page.loc}</loc>\n`;
+        sitemap += `    <changefreq>${page.changefreq}</changefreq>\n`;
+        sitemap += `    <priority>${page.priority}</priority>\n`;
+        sitemap += `  </url>\n`;
+      });
+      
+      // SEO Question pages
+      seoQuestions.forEach(sq => {
+        sitemap += `  <url>\n`;
+        sitemap += `    <loc>${baseUrl}/question/${sq.slug}</loc>\n`;
+        sitemap += `    <lastmod>${new Date(sq.updatedAt).toISOString()}</lastmod>\n`;
+        sitemap += `    <changefreq>weekly</changefreq>\n`;
+        sitemap += `    <priority>0.8</priority>\n`;
+        sitemap += `  </url>\n`;
+      });
+      
+      // News articles
+      newsArticles.forEach(article => {
+        sitemap += `  <url>\n`;
+        sitemap += `    <loc>${baseUrl}/news/${article.slug}</loc>\n`;
+        sitemap += `    <lastmod>${new Date(article.updatedAt).toISOString()}</lastmod>\n`;
+        sitemap += `    <changefreq>daily</changefreq>\n`;
+        sitemap += `    <priority>0.9</priority>\n`;
+        sitemap += `  </url>\n`;
+      });
+      
+      // Blog posts
+      blogPosts.forEach(post => {
+        sitemap += `  <url>\n`;
+        sitemap += `    <loc>${baseUrl}/blog/${post.slug}</loc>\n`;
+        sitemap += `    <lastmod>${new Date(post.updatedAt).toISOString()}</lastmod>\n`;
+        sitemap += `    <changefreq>monthly</changefreq>\n`;
+        sitemap += `    <priority>0.7</priority>\n`;
+        sitemap += `  </url>\n`;
+      });
+      
+      sitemap += '</urlset>';
+      
+      res.header('Content-Type', 'application/xml');
+      res.send(sitemap);
+    } catch (error) {
+      console.error('Sitemap generation error:', error);
+      res.status(500).send('Error generating sitemap');
+    }
+  });
+
+  // Robots.txt Route
+  app.get("/robots.txt", (req: Request, res: Response) => {
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const robotsTxt = `User-agent: *
+Allow: /
+Sitemap: ${baseUrl}/sitemap.xml
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /`;
+    
+    res.header('Content-Type', 'text/plain');
+    res.send(robotsTxt);
   });
 
   const httpServer = createServer(app);

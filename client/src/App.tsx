@@ -32,6 +32,11 @@ import TermsOfUse from "@/pages/TermsOfUse";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import ChildSafety from "@/pages/ChildSafety";
 import GrievanceRedressal from "@/pages/GrievanceRedressal";
+import QuestionPage from "@/pages/QuestionPage";
+import News from "@/pages/News";
+import NewsArticle from "@/pages/NewsArticle";
+import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
 import NotFound from "@/pages/not-found";
 
 function Header() {
@@ -59,7 +64,7 @@ function Header() {
                 POWERED BY SANSA LEARN
               </p>
               <p className="text-[9px] text-muted-foreground hidden sm:block">
-                Your personal AI tutor for NEET & JEE
+                Ask. Learn. Repeat. — Powered by AIMAI 🤖
               </p>
             </div>
           </div>
@@ -151,6 +156,17 @@ function Router() {
       <Route path="/grievance-redressal" component={GrievanceRedressal} />
       <Route path="/solution/:shareUrl">
         {(params) => <Solution shareUrl={params.shareUrl} />}
+      </Route>
+      <Route path="/question/:slug">
+        {(params) => <QuestionPage slug={params.slug} />}
+      </Route>
+      <Route path="/news" component={News} />
+      <Route path="/news/:slug">
+        {(params) => <NewsArticle slug={params.slug} />}
+      </Route>
+      <Route path="/blog" component={Blog} />
+      <Route path="/blog/:slug">
+        {(params) => <BlogPost slug={params.slug} />}
       </Route>
       <Route component={NotFound} />
     </Switch>
